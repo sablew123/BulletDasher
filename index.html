@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>BulletDasher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #000;
+            font-family: monospace;
+        }
+
+        #mainMenu {
+            position: fixed;
+            inset: 0;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: monospace;
+            text-align: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        #mainMenu::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(255,0,0,0.12), transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(255,30,0,0.10), transparent 45%);
+            pointer-events: none;
+        }
+
+        .menu-title {
+            position: relative;
+            font-size: 72px;
+            color: #ff1a1a;
+            text-shadow:
+                0 0 10px #ff0000,
+                0 0 20px #ff0000,
+                0 0 40px #ff0000,
+                0 0 80px #ff3300;
+            letter-spacing: 4px;
+            margin-bottom: 18px;
+            animation: neonPulse 2.2s ease-in-out infinite;
+        }
+
+        @keyframes neonPulse {
+            0%, 100% {
+                text-shadow: 0 0 10px #ff0000, 0 0 20px #ff0000, 0 0 40px #ff0000, 0 0 80px #ff3300;
+            }
+            50% {
+                text-shadow: 0 0 6px #ff0000, 0 0 14px #ff0000, 0 0 26px #ff0000, 0 0 50px #ff3300;
+            }
+        }
+
+        .menu-subtitle {
+            position: relative;
+            color: #ff6b6b;
+            font-size: 16px;
+            max-width: 520px;
+            margin-bottom: 55px;
+            text-shadow: 0 0 8px rgba(255,0,0,0.6);
+            letter-spacing: 0.5px;
+            line-height: 1.5;
+        }
+
+        .neon-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,0,0,0.08);
+            color: #ff4444;
+            border: 2px solid #ff0000;
+            padding: 16px 22px;
+            font-size: 22px;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 3px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,0,0,0.6), inset 0 0 10px rgba(255,0,0,0.25);
+            text-shadow: 0 0 8px #ff0000;
+            transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, color 0.2s ease;
+        }
+
+        .neon-btn .btn-icon {
+            font-size: 22px;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .neon-btn .btn-label {
+            display: inline-block;
+            max-width: 0;
+            opacity: 0;
+            margin-left: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            transition: max-width 0.35s ease, opacity 0.25s ease 0.05s, margin-left 0.35s ease;
+        }
+
+        .neon-btn:hover .btn-label,
+        .neon-btn:focus-visible .btn-label {
+            max-width: 260px;
+            opacity: 1;
+            margin-left: 12px;
+        }
+
+        .neon-btn:hover {
+            background: rgba(255,0,0,0.22);
+            box-shadow: 0 0 22px rgba(255,0,0,0.9), inset 0 0 15px rgba(255,0,0,0.4);
+            transform: scale(1.05);
+            color: #ffaaaa;
+        }
+
+        .mode-buttons {
+            position: relative;
+            display: flex;
+            gap: 22px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .neon-btn.mode-metro {
+            color: #4dd6ff;
+            border-color: #00c3ff;
+            background: rgba(0,195,255,0.08);
+            box-shadow: 0 0 10px rgba(0,195,255,0.6), inset 0 0 10px rgba(0,195,255,0.25);
+            text-shadow: 0 0 8px #00c3ff;
+        }
+
+        .neon-btn.mode-metro:hover {
+            background: rgba(0,195,255,0.22);
+            box-shadow: 0 0 22px rgba(0,195,255,0.9), inset 0 0 15px rgba(0,195,255,0.4);
+            color: #b3ecff;
+        }
+
+        .neon-btn.mode-squasteroids {
+            color: #c98dff;
+            border-color: #a64dff;
+            background: rgba(170,80,255,0.08);
+            box-shadow: 0 0 10px rgba(170,80,255,0.6), inset 0 0 10px rgba(170,80,255,0.25);
+            text-shadow: 0 0 8px #a64dff;
+        }
+
+        .neon-btn.mode-squasteroids:hover {
+            background: rgba(170,80,255,0.22);
+            box-shadow: 0 0 22px rgba(170,80,255,0.9), inset 0 0 15px rgba(170,80,255,0.4);
+            color: #e3c3ff;
+        }
+
+        .neon-btn.mode-practice {
+            color: #fff44d;
+            border-color: #ffee00;
+            background: rgba(255,238,0,0.08);
+            box-shadow: 0 0 10px rgba(255,238,0,0.6), inset 0 0 10px rgba(255,238,0,0.25);
+            text-shadow: 0 0 8px #ffee00;
+        }
+
+        .neon-btn.mode-practice:hover {
+            background: rgba(255,238,0,0.22);
+            box-shadow: 0 0 22px rgba(255,238,0,0.9), inset 0 0 15px rgba(255,238,0,0.4);
+            color: #fff9b3;
+        }
+
+        .practice-fixed {
+            position: fixed;
+            left: 20px;
+            bottom: 20px;
+            z-index: 10;
+        }
+
+        /* En celular (sin hover real) los botones se quedan siempre abiertos, mostrando el nombre */
+        @media (hover: none), (pointer: coarse) {
+            .neon-btn .btn-label {
+                max-width: 260px;
+                opacity: 1;
+                margin-left: 12px;
+            }
+        }
+
+        /* ===== Menú adaptado a pantallas chicas: nada de posiciones fijas
+           sueltas que puedan superponerse — todo entra en el flujo normal,
+           apilado en columna, y se puede scrollear si no entra entero. ===== */
+        @media (max-width: 640px) {
+            #mainMenu {
+                overflow-y: auto;
+                justify-content: flex-start;
+                padding: 50px 16px 90px;
+            }
+
+            .menu-title {
+                font-size: 40px;
+                letter-spacing: 2px;
+                margin-bottom: 10px;
+            }
+
+            .menu-subtitle {
+                font-size: 13px;
+                max-width: 92%;
+                margin-bottom: 28px;
+            }
+
+            .mode-buttons {
+                flex-direction: column;
+                width: 100%;
+                max-width: 320px;
+                gap: 14px;
+            }
+
+            .neon-btn {
+                width: 100%;
+                padding: 14px 18px;
+                font-size: 18px;
+            }
+
+            /* el botón de Practice deja de ser fixed y pasa a la columna,
+               así nunca queda flotando encima de los otros botones */
+            .practice-fixed {
+                position: static;
+                width: 100%;
+                max-width: 320px;
+                margin-top: 18px;
+            }
+
+            #settingsBtn {
+                width: 38px;
+                height: 38px;
+                right: 14px;
+                bottom: 14px;
+                font-size: 16px;
+            }
+
+            #achTab.open {
+                right: min(300px, 86vw);
+            }
+
+            #achPanel {
+                width: min(300px, 86vw);
+                right: min(-320px, -86vw - 20px);
+            }
+        }
+
+        /* ===== Barra de logros retráctil ===== */
+        #achTab {
+            position: fixed;
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+            z-index: 30;
+            background: rgba(255, 200, 0, 0.10);
+            border: 2px solid #ffcc00;
+            border-right: none;
+            border-radius: 10px 0 0 10px;
+            color: #ffd94d;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 2px;
+            font-size: 15px;
+            padding: 14px 8px;
+            writing-mode: vertical-rl;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,200,0,0.6), inset 0 0 8px rgba(255,200,0,0.25);
+            text-shadow: 0 0 8px #ffcc00;
+            transition: background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, right 0.35s ease;
+        }
+
+        #achTab:hover {
+            background: rgba(255, 200, 0, 0.22);
+            box-shadow: 0 0 20px rgba(255,200,0,0.9), inset 0 0 12px rgba(255,200,0,0.4);
+            color: #fff3b3;
+        }
+
+        #achTab.open {
+            right: 300px;
+        }
+
+        #achPanel {
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 300px;
+            height: 100vh;
+            background: rgba(8, 6, 0, 0.94);
+            border-left: 2px solid #ffcc00;
+            box-shadow: -10px 0 30px rgba(255,200,0,0.25);
+            z-index: 25;
+            overflow-y: auto;
+            padding: 70px 16px 24px;
+            transition: right 0.35s ease;
+        }
+
+        #achPanel.open {
+            right: 0;
+        }
+
+        #achPanel::-webkit-scrollbar {
+            width: 6px;
+        }
+        #achPanel::-webkit-scrollbar-thumb {
+            background: rgba(255,200,0,0.5);
+            border-radius: 3px;
+        }
+
+        .ach-panel-title {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: #ffd94d;
+            font-size: 20px;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px #ffcc00, 0 0 20px #ffcc00;
+        }
+
+        .ach-item {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255,200,0,0.06);
+            border: 1px solid rgba(255,200,0,0.5);
+            border-radius: 6px;
+            padding: 8px 10px;
+            margin-bottom: 10px;
+            cursor: default;
+            transition: background 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .ach-item:hover {
+            background: rgba(255,200,0,0.15);
+            box-shadow: 0 0 12px rgba(255,200,0,0.5);
+        }
+
+        .ach-icon {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            background: #0a0800;
+            border: 2px solid #ffcc00;
+            border-radius: 4px;
+            box-shadow: 0 0 6px rgba(255,200,0,0.5), inset 0 0 6px rgba(255,200,0,0.2);
+        }
+
+        .ach-name {
+            color: #ffe680;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            line-height: 1.3;
+            text-shadow: 0 0 6px rgba(255,200,0,0.5);
+        }
+
+        .ach-tooltip {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 220px;
+            background: rgba(8, 6, 0, 0.97);
+            border: 1px solid #ffcc00;
+            border-radius: 6px;
+            padding: 10px 12px;
+            color: #ffe680;
+            font-size: 12px;
+            line-height: 1.4;
+            box-shadow: 0 0 16px rgba(255,200,0,0.6);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 40;
+        }
+
+        .ach-tooltip.show-tip {
+            opacity: 1;
+        }
+
+        /* ===== Recompensas: tipo, nombre y botón de equipar ===== */
+        .ach-limits {
+            position: relative;
+            color: #ffd94d;
+            font-size: 11px;
+            text-align: center;
+            line-height: 1.5;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed rgba(255,200,0,0.4);
+            text-shadow: 0 0 6px rgba(255,200,0,0.4);
+        }
+
+        .ach-body {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .ach-reward-type {
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .ach-reward-type.type-mascot { color: #7fffb3; }
+        .ach-reward-type.type-cosmetic { color: #7fd6ff; }
+        .ach-reward-type.type-skin { color: #ff9ecb; }
+
+        .ach-reward-name {
+            font-size: 11px;
+            color: #ffe680;
+            opacity: 0.85;
+        }
+
+        .ach-equip-btn {
+            flex-shrink: 0;
+            font-family: monospace;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            padding: 6px 8px;
+            border-radius: 5px;
+            border: 1px solid #ffcc00;
+            background: rgba(255,200,0,0.08);
+            color: #ffd94d;
+            cursor: pointer;
+            transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+        }
+        .ach-equip-btn:hover {
+            background: rgba(255,200,0,0.22);
+            box-shadow: 0 0 8px rgba(255,200,0,0.6);
+        }
+        .ach-equip-btn.equipped {
+            background: #ffcc00;
+            color: #1a1400;
+            box-shadow: 0 0 10px rgba(255,200,0,0.8);
+        }
+        .ach-equip-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* ===== Logro bloqueado (no conseguido todavía) ===== */
+        .ach-item.locked {
+            opacity: 0.55;
+        }
+        .ach-item.locked .ach-icon {
+            border-color: rgba(255,200,0,0.35);
+            box-shadow: none;
+        }
+        .ach-locked-label {
+            font-size: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #998a4d;
+        }
+
+        /* ===== Botón de configuración (engranaje) ===== */
+        #settingsBtn {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 10;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(200, 200, 200, 0.08);
+            border: 2px solid #aaaaaa;
+            color: #cccccc;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(200,200,200,0.4), inset 0 0 8px rgba(200,200,200,0.15);
+            transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, color 0.2s ease;
+        }
+
+        #settingsBtn:hover {
+            background: rgba(220,220,220,0.2);
+            box-shadow: 0 0 16px rgba(220,220,220,0.7), inset 0 0 10px rgba(220,220,220,0.3);
+            color: #ffffff;
+            transform: rotate(35deg);
+        }
+
+        /* ===== Ventana de configuración ===== */
+        #settingsOverlay {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            background: rgba(0,0,0,0.78);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 20px;
+        }
+
+        #settingsOverlay.open {
+            display: flex;
+        }
+
+        #settingsWindow {
+            position: relative;
+            width: 100%;
+            max-width: 340px;
+            background: rgba(10,10,10,0.96);
+            border: 2px solid #bbbbbb;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(200,200,200,0.35);
+            padding: 26px 20px 16px;
+            font-family: monospace;
+            color: #dddddd;
+        }
+
+        .settings-close {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #cccccc;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 4px 8px;
+            transition: color 0.2s ease, text-shadow 0.2s ease;
+        }
+
+        .settings-close:hover {
+            color: #ffffff;
+            text-shadow: 0 0 8px #ffffff;
+        }
+
+        .settings-title {
+            text-align: center;
+            font-size: 18px;
+            letter-spacing: 3px;
+            color: #eeeeee;
+            text-shadow: 0 0 8px rgba(255,255,255,0.5);
+            margin-bottom: 20px;
+        }
+
+        .settings-section {
+            margin-bottom: 18px;
+        }
+
+        .settings-section-label {
+            font-size: 11px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: #999999;
+            margin-bottom: 8px;
+        }
+
+        .settings-lang-btn {
+            width: 100%;
+            font-family: monospace;
+            font-size: 13px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #888888;
+            background: rgba(255,255,255,0.08);
+            color: #eeeeee;
+            cursor: default;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .settings-danger-btn {
+            width: 100%;
+            font-family: monospace;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid #ff4444;
+            background: rgba(255,0,0,0.08);
+            color: #ff6b6b;
+            cursor: pointer;
+            transition: background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+        }
+
+        .settings-danger-btn:hover {
+            background: rgba(255,0,0,0.22);
+            box-shadow: 0 0 12px rgba(255,0,0,0.6);
+            color: #ffaaaa;
+        }
+
+        .settings-danger-btn.confirm {
+            background: #ff2222;
+            color: #fff0f0;
+            box-shadow: 0 0 14px rgba(255,0,0,0.8);
+        }
+
+        .settings-credit {
+            position: absolute;
+            bottom: 6px;
+            right: 10px;
+            font-size: 9px;
+            color: #777777;
+            letter-spacing: 0.5px;
+        }
+
+        .settings-disclaimer {
+            text-align: center;
+            font-size: 8px;
+            color: #666666;
+            letter-spacing: 0.3px;
+            margin-top: 8px;
+            max-width: 340px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+<div id="mainMenu">
+    <h1 class="menu-title">BulletDasher</h1>
+    <p class="menu-subtitle">El juego mas inhumanamente divertido que podrías sufrir</p>
+    <div class="mode-buttons">
+        <button id="playBtn" class="neon-btn"><span class="btn-icon">▶</span><span class="btn-label">CLASSIC</span></button>
+        <button id="metroBtn" class="neon-btn mode-metro"><span class="btn-icon">🚇</span><span class="btn-label">METRO</span></button>
+        <button id="squasteroidsBtn" class="neon-btn mode-squasteroids"><span class="btn-icon">🌌</span><span class="btn-label">SQUASTEROIDS</span></button>
+    </div>
+    <button id="practiceBtn" class="neon-btn mode-practice practice-fixed"><span class="btn-icon">🎯</span><span class="btn-label">PRACTICE MODE</span></button>
+</div>
+
+<button id="achTab">🏆 LOGROS</button>
+<div id="achPanel">
+    <div class="ach-panel-title">🏆 LOGROS</div>
+    <div class="ach-limits">
+        🎯 Cosmético: 1 a la vez &nbsp;|&nbsp; 🐾 Mascotas: hasta 3 &nbsp;|&nbsp; ✨ Skins: sin límite
+    </div>
+    <div id="achList"></div>
+</div>
+
+<button id="settingsBtn" title="Configuración">⚙️</button>
+<div id="settingsOverlay">
+    <div id="settingsWindow">
+        <button class="settings-close" id="settingsCloseBtn">✕</button>
+        <div class="settings-title">CONFIGURACIÓN</div>
+
+        <div class="settings-section">
+            <div class="settings-section-label">Idioma</div>
+            <div class="settings-lang-btn"><span>🇪🇸 Español</span><span>✔</span></div>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-label">Datos</div>
+            <button class="settings-danger-btn" id="wipeDataBtn">BORRAR DATOS</button>
+        </div>
+
+        <div class="settings-credit">Creado por EasyFacilongo</div>
+    </div>
+    <div class="settings-disclaimer">este proyecto está hecho con uso de IAs y prompts 100% controlados por el creador</div>
+</div>
+
+<script src="cosmetics.js"></script>
+<script src="achievements.js"></script>
+<script>
+    const achievements = [
+        { id: "classical-music", name: "Classical Music", desc: "Sobrevive en Classic Mode el tiempo suficiente para que la canción de fondo se repita." },
+        { id: "ambient-music", name: "Ambient Music", desc: "Sobrevive en Metro Mode el tiempo suficiente para que la canción de fondo se repita." },
+        { id: "space-music", name: "Space Music", desc: "Sobrevive en Squasteroids Mode el tiempo suficiente para que la canción de fondo se repita." },
+        { id: "sniper-of-snipers", name: "SniperOfSnipers", desc: "Atraviesa a un Redst durante su trayecto y cómete la caja de vida que dejó." },
+        { id: "short-distance", name: "ShortDistance", desc: "Atraviesa a un Redst antes de que empiece su trayecto." },
+        { id: "holy-frame", name: "¡Holy Frame!", desc: "Sobrevive a una extinción usando los 8 frames de invulnerabilidad del dash." },
+        { id: "no-euclidian", name: "No Euclidian hehehe", desc: "Dale una vuelta en línea recta (vertical u horizontal) al mundo de Squasteroids Mode." },
+        { id: "dashing-engineer", name: "Dashing Engineer", desc: "Carga un archivo de nivel y juégalo en Practice Mode." },
+        { id: "i-choose-death", name: "i choose DEATH!", desc: "Sé asesinado por un Berserker que acabe de atravesar un asteroide grande." },
+        { id: "dash-god", name: "Dash God", desc: "Sobrevive hasta que la canción de fondo termine, en cualquier modo, sin sufrir daño nunca." },
+        { id: "too-slow", name: "Too Slow!", desc: "Sufre el daño de una barrera de extinción aunque la hayas tocado a tiempo, porque te dejó atrás." },
+        { id: "subway-jerk", name: "Subway jerk", desc: "Dashea a través de 3 Pepes sin sufrir daño, solo por joderlos." },
+        { id: "yujiro-hanma", name: "Yujiro Hanma", desc: "Atraviesa 2 o más láseres en un solo dash." },
+        { id: "purpnocide", name: "Purpnocide", desc: "Consume cada vida que hayan dejado 30 Purps que hayas matado en una sola partida." }
+    ];
+
+    const achList = document.getElementById('achList');
+    const isTouch = () => window.matchMedia('(hover: none), (pointer: coarse)').matches;
+
+    function positionTooltip(item, tooltip) {
+        const rect = item.getBoundingClientRect();
+        if (isTouch()) {
+            // en celular: el cuadradito aparece debajo del logro
+            tooltip.style.top = (rect.bottom + 6) + 'px';
+            tooltip.style.left = Math.max(8, rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+        } else {
+            // en pc: el cuadradito aparece a la izquierda del logro
+            tooltip.style.top = (rect.top + rect.height / 2) + 'px';
+            tooltip.style.left = (rect.left - tooltip.offsetWidth - 10) + 'px';
+            tooltip.style.transform = 'translateY(-50%)';
+        }
+    }
+
+    const TYPE_LABEL = { mascot: 'Mascota', cosmetic: 'Cosmético', skin: 'Skin' };
+
+    function refreshEquipButton(btn, rewardId) {
+        const equippedNow = Cosmetics.isEquipped(rewardId);
+        btn.textContent = equippedNow ? '✔ EQUIPADO' : 'EQUIPAR';
+        btn.classList.toggle('equipped', equippedNow);
+    }
+
+    achievements.forEach(a => {
+        const reward = Cosmetics.getRewardByAchievement(a.id);
+        const unlocked = Achievements.isUnlocked(a.id);
+        const showReward = reward && unlocked;
+
+        const item = document.createElement('div');
+        item.className = 'ach-item' + (unlocked ? '' : ' locked');
+        item.innerHTML = `
+            <canvas class="ach-icon" width="40" height="40" data-achievement="${a.id}"></canvas>
+            <div class="ach-body">
+                <div class="ach-name">${a.name}</div>
+                ${showReward ? `<div class="ach-reward-type type-${reward.type}">${TYPE_LABEL[reward.type]}: ${reward.name}</div>` : ''}
+                ${!unlocked ? `<div class="ach-locked-label">🔒 Bloqueado</div>` : ''}
+            </div>
+            ${showReward ? `<button class="ach-equip-btn" type="button"></button>` : ''}
+            <div class="ach-tooltip">${a.desc}</div>
+        `;
+        const tooltip = item.querySelector('.ach-tooltip');
+
+        // Ícono real de la recompensa (mascota / cosmético / skin), animado —
+        // solo si el logro ya está desbloqueado. Si no, un candado quieto.
+        const iconCanvas = item.querySelector('.ach-icon');
+        if (showReward) {
+            Cosmetics.registerIconCanvas(iconCanvas, a.id);
+        } else {
+            const lockCtx = iconCanvas.getContext('2d');
+            lockCtx.font = '20px sans-serif';
+            lockCtx.textAlign = 'center';
+            lockCtx.textBaseline = 'middle';
+            lockCtx.fillText('🔒', iconCanvas.width / 2, iconCanvas.height / 2 + 1);
+        }
+
+        // Botón de equipar / desequipar, respetando límites (1 cosmético, 3 mascotas, skins libres)
+        const equipBtn = item.querySelector('.ach-equip-btn');
+        if (showReward && equipBtn) {
+            refreshEquipButton(equipBtn, reward.rewardId);
+            equipBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const result = Cosmetics.toggleEquip(reward.rewardId);
+                if (!result.ok) {
+                    if (result.reason === 'limit-mascot') {
+                        equipBtn.classList.add('disabled');
+                        equipBtn.textContent = 'MÁX. 3 MASCOTAS';
+                        setTimeout(() => {
+                            equipBtn.classList.remove('disabled');
+                            refreshEquipButton(equipBtn, reward.rewardId);
+                        }, 1400);
+                    }
+                    return;
+                }
+                refreshEquipButton(equipBtn, reward.rewardId);
+                // Si es cosmético, refrescamos los demás botones de cosmético (solo 1 a la vez)
+                if (reward.type === 'cosmetic') {
+                    document.querySelectorAll('.ach-item').forEach(other => {
+                        const otherBtn = other.querySelector('.ach-equip-btn');
+                        const otherAchId = other.querySelector('.ach-icon')?.dataset.achievement;
+                        const otherReward = otherAchId ? Cosmetics.getRewardByAchievement(otherAchId) : null;
+                        if (otherBtn && otherReward && otherReward.type === 'cosmetic') {
+                            refreshEquipButton(otherBtn, otherReward.rewardId);
+                        }
+                    });
+                }
+            });
+        }
+
+        item.addEventListener('mouseenter', () => {
+            if (isTouch()) return;
+            positionTooltip(item, tooltip);
+            tooltip.classList.add('show-tip');
+        });
+        item.addEventListener('mouseleave', () => {
+            if (isTouch()) return;
+            tooltip.classList.remove('show-tip');
+        });
+
+        // En celular no hay hover real: tocar el logro alterna la descripción
+        item.addEventListener('click', () => {
+            if (!isTouch()) return;
+            document.querySelectorAll('.ach-tooltip.show-tip').forEach(el => {
+                if (el !== tooltip) el.classList.remove('show-tip');
+            });
+            const willShow = !tooltip.classList.contains('show-tip');
+            if (willShow) positionTooltip(item, tooltip);
+            tooltip.classList.toggle('show-tip', willShow);
+        });
+
+        achList.appendChild(item);
+    });
+
+    const achTab = document.getElementById('achTab');
+    const achPanel = document.getElementById('achPanel');
+    achTab.addEventListener('click', () => {
+        achTab.classList.toggle('open');
+        achPanel.classList.toggle('open');
+    });
+</script>
+
+<script>
+    document.getElementById('playBtn').addEventListener('click', () => {
+        window.location.href = 'ClassicMode.html';
+    });
+    document.getElementById('metroBtn').addEventListener('click', () => {
+        window.location.href = 'MetroMode.html';
+    });
+    document.getElementById('squasteroidsBtn').addEventListener('click', () => {
+        window.location.href = 'SquasteroidsMode.html';
+    });
+    document.getElementById('practiceBtn').addEventListener('click', () => {
+        window.location.href = 'PracticeMode.html';
+    });
+</script>
+
+<script>
+    // ===== Ventana de configuración =====
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsOverlay = document.getElementById('settingsOverlay');
+    const settingsCloseBtn = document.getElementById('settingsCloseBtn');
+
+    settingsBtn.addEventListener('click', () => {
+        settingsOverlay.classList.add('open');
+    });
+    // Solo se cierra con el botón X (tocar fuera de la ventana no la cierra)
+    settingsCloseBtn.addEventListener('click', () => {
+        settingsOverlay.classList.remove('open');
+    });
+
+    // Borrar datos: pide confirmación tocando dos veces antes de ejecutar
+    const wipeDataBtn = document.getElementById('wipeDataBtn');
+    let wipeConfirmTimeout = null;
+    wipeDataBtn.addEventListener('click', () => {
+        if (!wipeDataBtn.classList.contains('confirm')) {
+            wipeDataBtn.classList.add('confirm');
+            wipeDataBtn.textContent = '¿SEGURO? TOCA DE NUEVO';
+            wipeConfirmTimeout = setTimeout(() => {
+                wipeDataBtn.classList.remove('confirm');
+                wipeDataBtn.textContent = 'BORRAR DATOS';
+            }, 3000);
+            return;
+        }
+        clearTimeout(wipeConfirmTimeout);
+        localStorage.clear();
+        window.location.reload();
+    });
+</script>
+</body>
+</html>

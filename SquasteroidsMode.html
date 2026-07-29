@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>BulletDasher - Squasteroids Mode</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: monospace;
+            transition: background-color 0.05s ease;
+        }
+        
+        body.damage-flash {
+            background-color: #ff0000 !important;
+        }
+        
+        canvas {
+            border: 2px solid white;
+            box-shadow: 0 0 20px rgba(170,80,255,0.3);
+            cursor: none;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: lime;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            z-index: 10;
+            pointer-events: none;
+            font-size: 14px;
+        }
+        
+        .controls-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            font-size: 12px;
+            padding: 5px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .restart-hint {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            color: gray;
+            background: rgba(0,0,0,0.5);
+            font-size: 11px;
+            padding: 5px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .mobile-hidden { display: none !important; }
+
+        #musicToggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 70;
+            border: 1px solid white;
+            cursor: pointer;
+        }
+
+        #musicToggle:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        #fullscreenBtn {
+            position: absolute;
+            top: 10px;
+            right: 150px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 70;
+            border: 1px solid white;
+            cursor: pointer;
+        }
+
+        #fullscreenBtn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        #fullscreenBtn.hidden { display: none !important; }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .neon-btn {
+            position: relative;
+            background: rgba(255,0,0,0.08);
+            color: #ff4444;
+            border: 2px solid #ff0000;
+            padding: 16px 55px;
+            font-size: 22px;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 3px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,0,0,0.6), inset 0 0 10px rgba(255,0,0,0.25);
+            text-shadow: 0 0 8px #ff0000;
+            transition: all 0.2s ease;
+        }
+
+        .neon-btn:hover {
+            background: rgba(255,0,0,0.22);
+            box-shadow: 0 0 22px rgba(255,0,0,0.9), inset 0 0 15px rgba(255,0,0,0.4);
+            transform: scale(1.05);
+            color: #ffaaaa;
+        }
+
+        #menuBtn {
+            position: absolute;
+            bottom: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 70;
+            padding: 10px 28px;
+            font-size: 13px;
+            background: rgba(170,80,255,0.08);
+            color: #c98dff;
+            border-color: #a64dff;
+            box-shadow: 0 0 10px rgba(170,80,255,0.6), inset 0 0 10px rgba(170,80,255,0.25);
+            text-shadow: 0 0 8px #a64dff;
+        }
+
+        #menuBtn:hover {
+            transform: translateX(-50%) scale(1.05);
+            background: rgba(170,80,255,0.22);
+            box-shadow: 0 0 22px rgba(170,80,255,0.9), inset 0 0 15px rgba(170,80,255,0.4);
+            color: #e3c3ff;
+        }
+
+        /* ---------- CONTROLES MÓVILES ---------- */
+        #mobileControls {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            pointer-events: none;
+        }
+
+        #mobileControls.hidden { display: none !important; }
+
+        #joystickZone {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            width: 130px;
+            height: 130px;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        #joystickBase {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.07);
+            border: 2px solid rgba(170,80,255,0.55);
+            box-shadow: 0 0 15px rgba(170,80,255,0.3), inset 0 0 15px rgba(170,80,255,0.15);
+        }
+
+        #joystickKnob {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 54px;
+            height: 54px;
+            margin-left: -27px;
+            margin-top: -27px;
+            border-radius: 50%;
+            background: rgba(170,80,255,0.55);
+            box-shadow: 0 0 12px rgba(170,80,255,0.9);
+        }
+
+        #swipeZone {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+    </style>
+<script src="cosmetics.js"></script>
+<script src="achievements.js"></script>
+</head>
+<body>
+<div id="ui" class="hidden">
+    ❤️ VIDA: <span id="hp">3</span> | 🎯 SCORE: <span id="score">0</span><br>
+    ⏱️ Tiempo: <span id="gameTime">0:00</span>
+</div>
+<div class="controls-info hidden">
+    🎮 WASD = mover | ⚡ FLECHAS = dash (invencibilidad + rompe asteroides) | 📱 Joystick + desliza a la derecha para dash
+</div>
+<div class="restart-hint hidden">
+    💀 GAME OVER → Presiona ESPACIO para reiniciar
+</div>
+<button id="musicToggle" class="hidden">🎵 Música: ON</button>
+<button id="fullscreenBtn" class="hidden">⛶ Pantalla completa</button>
+<button id="menuBtn" class="neon-btn hidden">🏠 Menú Principal</button>
+<canvas id="gameCanvas" width="1100" height="750" class="hidden"></canvas>
+
+<div id="mobileControls" class="hidden">
+    <div id="joystickZone">
+        <div id="joystickBase">
+            <div id="joystickKnob"></div>
+        </div>
+    </div>
+    <div id="swipeZone"></div>
+</div>
+
+<script>
+    (function(){
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const bodyElement = document.body;
+
+        // ---------- CONTROL DE PANTALLA DE JUEGO ----------
+        const menuBtn = document.getElementById('menuBtn');
+        const gameScreenElements = [
+            document.getElementById('ui'),
+            document.querySelector('.controls-info'),
+            document.querySelector('.restart-hint'),
+            document.getElementById('musicToggle'),
+            canvas
+        ];
+
+        // En SquasteroidsMode.html el juego arranca directo, sin overlay de menú
+        let inMenu = false;
+
+        // ---------- DETECCIÓN DE MÓVIL Y CONTROLES TÁCTILES ----------
+        const isMobile = (('ontouchstart' in window) || navigator.maxTouchPoints > 0)
+            && window.matchMedia('(pointer: coarse)').matches;
+
+        const mobileControls = document.getElementById('mobileControls');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+        if(isMobile) {
+            document.querySelector('.controls-info').classList.add('mobile-hidden');
+            document.querySelector('.restart-hint').classList.add('mobile-hidden');
+        }
+
+        // ---------- ESCALAR CANVAS EN CELU (sin estirar, centrado) ----------
+        function resizeCanvasForMobile() {
+            if(!isMobile) return;
+            const availW = window.innerWidth;
+            const availH = window.innerHeight;
+            const scale = Math.min(availW / canvas.width, availH / canvas.height);
+            canvas.style.width = (canvas.width * scale) + 'px';
+            canvas.style.height = (canvas.height * scale) + 'px';
+        }
+
+        if(isMobile) {
+            fullscreenBtn.classList.remove('hidden');
+            resizeCanvasForMobile();
+            window.addEventListener('resize', resizeCanvasForMobile);
+            window.addEventListener('orientationchange', resizeCanvasForMobile);
+        }
+
+        function toggleFullscreen() {
+            const el = document.documentElement;
+            if(!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if(el.requestFullscreen) el.requestFullscreen().catch(() => {});
+                else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            } else {
+                if(document.exitFullscreen) document.exitFullscreen();
+                else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+        }
+
+        function updateFullscreenBtnUI() {
+            const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            fullscreenBtn.textContent = isFs ? "✕ Salir pantalla completa" : "⛶ Pantalla completa";
+        }
+
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+        document.addEventListener('fullscreenchange', () => { updateFullscreenBtnUI(); resizeCanvasForMobile(); });
+        document.addEventListener('webkitfullscreenchange', () => { updateFullscreenBtnUI(); resizeCanvasForMobile(); });
+
+        function showGameScreen() {
+            inMenu = false;
+            gameScreenElements.forEach(el => el.classList.remove('hidden'));
+            if(isMobile) mobileControls.classList.remove('hidden');
+        }
+
+        function goToMainMenu() {
+            stopMusic();
+            window.location.href = 'index.html';
+        }
+
+        menuBtn.addEventListener('click', goToMainMenu);
+        
+        // ---------- AUDIO ----------
+        let backgroundMusic = null;
+        let musicInitialized = false;
+        let musicLoopWatcher = null; // logro "Space Music": se arma en initMusic()
+        
+        function initMusic() {
+            if (musicInitialized) return;
+            try {
+                backgroundMusic = new Audio('musicasquasteroids.mp3');
+                backgroundMusic.loop = true;
+                backgroundMusic.volume = 0.7;
+                musicLoopWatcher = Achievements.watchMusicLoop(backgroundMusic, 'space-music', Achievements.MODES.SQUASTEROIDS, () => {
+                    if (!tookDamageThisRun) Achievements.tryUnlock('dash-god', Achievements.MODES.SQUASTEROIDS);
+                });
+                if (!musicMuted) {
+                    backgroundMusic.play().catch(e => console.log("Esperando interacción para reproducir música"));
+                }
+                musicInitialized = true;
+            } catch(e) { console.log("No se pudo cargar musicasquasteroids.mp3", e); }
+        }
+        
+        function restartMusic() {
+            if (backgroundMusic) {
+                backgroundMusic.pause();
+                backgroundMusic.currentTime = 0;
+                if (musicLoopWatcher) musicLoopWatcher.reset(); // este reinicio manual no cuenta como vuelta real
+                if (!musicMuted) {
+                    backgroundMusic.play().catch(e => console.log("No se pudo reproducir música", e));
+                }
+            } else {
+                initMusic();
+            }
+        }
+        
+        function stopMusic() {
+            if (backgroundMusic) {
+                backgroundMusic.pause();
+            }
+        }
+        
+        // ---------- MUTE SOLO MÚSICA (no afecta efectos de sonido) ----------
+        let musicMuted = false;
+        const musicToggleBtn = document.getElementById('musicToggle');
+        
+        function updateMusicToggleUI() {
+            musicToggleBtn.textContent = musicMuted ? "🔇 Música: OFF" : "🎵 Música: ON";
+        }
+        
+        function toggleMusic() {
+            musicMuted = !musicMuted;
+            if (backgroundMusic) {
+                if (musicMuted) {
+                    backgroundMusic.pause();
+                } else if (!gameOver) {
+                    backgroundMusic.play().catch(e => {});
+                }
+            }
+            updateMusicToggleUI();
+        }
+        
+        musicToggleBtn.addEventListener('click', toggleMusic);
+        
+        function playDamageSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = 220;
+                gainNode.gain.value = 0.3;
+                
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+                oscillator.stop(audioCtx.currentTime + 0.3);
+                
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) { console.log("Audio no soportado"); }
+        }
+        
+        // Sonido de impacto del berserker al perder una vida: mucho más grave y fuerte
+        // que el daño clásico (frecuencia baja que cae aún más, con más volumen).
+        function playBerserkerHitSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.value = 85; // grave
+                gainNode.gain.value = 0.55; // más fuerte que el daño clásico (0.3)
+
+                oscillator.start();
+                oscillator.frequency.exponentialRampToValueAtTime(38, audioCtx.currentTime + 0.35);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.4);
+                oscillator.stop(audioCtx.currentTime + 0.4);
+
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) { console.log("Audio no soportado"); }
+        }
+
+        function playHealSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = 523.25;
+                gainNode.gain.value = 0.2;
+                
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2);
+                oscillator.stop(audioCtx.currentTime + 0.2);
+                
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) { console.log("Audio no soportado"); }
+        }
+        
+        // DESTELLO ROJO
+        let damageFlashTimer = 0;
+        function triggerDamageFlash() {
+            bodyElement.classList.add('damage-flash');
+            damageFlashTimer = 6;
+            playDamageSound();
+        }
+        
+        function updateDamageFlash() {
+            if (damageFlashTimer > 0) {
+                damageFlashTimer--;
+                if (damageFlashTimer <= 0) {
+                    bodyElement.classList.remove('damage-flash');
+                }
+            }
+        }
+        
+        // ---------- DASH LASER ----------
+        let dashTrail = { active: false, x1: 0, y1: 0, x2: 0, y2: 0, timer: 0 };
+        const MODE_DASH_COLOR = '#a64dff'; // color neón del dash en este modo (morado) — usado por los cosméticos
+        const DASH_TRAIL_DURATION = 8;
+        
+        // ---------- PARÁMETROS ----------
+        let hp = 3;
+        let score = 0;
+        let gameOver = false;
+        let timeScoreCounter = 0;
+        const FRAMES_PER_SECOND = 60;
+        const TIME_SCORE_AMOUNT = 5;
+        let gameTimeFrames = 0;
+        
+        // ---- Estado de logros (por partida) ----
+        let tookDamageThisRun = false; // logro "Dash God": ni un solo golpe en toda la partida
+        let purpKillsThisRun = 0;      // logro "Purpnocide": Purps matados por dash en esta partida
+        let purpItemsEatenThisRun = 0; // cajitas de vida de Purps ya comidas
+        let purpnocideMissed = false;  // se puso true si se dejó expirar una cajita de un Purp
+        
+        function formatGameTime(frames) {
+            const totalSeconds = Math.floor(frames / FRAMES_PER_SECOND);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+        }
+        
+        // ---------- MUNDO INFINITO NO-EUCLÍDEO (toroidal) ----------
+        // El mundo es más grande que la pantalla y "envuelve" en los 4 bordes: si vas
+        // siempre para el mismo lado, terminás saliendo por el lado contrario, sin ningún
+        // teletransporte visible (igual que en Asteroids).
+        const WORLD_W = 2300;
+        const WORLD_H = 1700;
+        
+        // Cámara con delay: no sigue al jugador exactamente, lo persigue con cierto retraso
+        const CAMERA_LAG = 0.055;
+        let camera = { x: WORLD_W/2, y: WORLD_H/2 };
+        
+        // Diferencia más corta entre dos coordenadas en un eje que envuelve (mundo toroidal)
+        function wrapDelta(from, to, size) {
+            let d = (to - from) % size;
+            if(d > size/2) d -= size;
+            else if(d < -size/2) d += size;
+            return d;
+        }
+        
+        // Normaliza una coordenada al rango [0, size)
+        function wrapCoord(v, size) {
+            v = v % size;
+            if(v < 0) v += size;
+            return v;
+        }
+
+        function randRange(min, max) { return min + Math.random() * (max - min); }
+        function randInt(min, max) { return Math.floor(randRange(min, max + 1)); }
+
+        // Distancia más corta entre dos puntos del mundo toroidal (para colisiones)
+        function worldDist(x1, y1, x2, y2) {
+            let dx = wrapDelta(x1, x2, WORLD_W);
+            let dy = wrapDelta(y1, y2, WORLD_H);
+            return Math.hypot(dx, dy);
+        }
+
+        // Distancia de un punto a un segmento (para el laser de dash atravesando asteroides)
+        function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+            const ax = px - x1;
+            const ay = py - y1;
+            const bx = x2 - x1;
+            const by = y2 - y1;
+            const dot = ax * bx + ay * by;
+            const len2 = bx * bx + by * by;
+            if (len2 === 0) return Math.hypot(px - x1, py - y1);
+            let t = dot / len2;
+            t = Math.max(0, Math.min(1, t));
+            const closestX = x1 + t * bx;
+            const closestY = y1 + t * by;
+            return Math.hypot(px - closestX, py - closestY);
+        }
+        
+        function updateCamera() {
+            let dx = wrapDelta(camera.x, player.x, WORLD_W);
+            let dy = wrapDelta(camera.y, player.y, WORLD_H);
+            camera.x = wrapCoord(camera.x + dx * CAMERA_LAG, WORLD_W);
+            camera.y = wrapCoord(camera.y + dy * CAMERA_LAG, WORLD_H);
+        }
+        
+        // Convierte una posición del mundo a coordenadas de pantalla, relativas a la cámara
+        function worldToScreen(wx, wy) {
+            let dx = wrapDelta(camera.x, wx, WORLD_W);
+            let dy = wrapDelta(camera.y, wy, WORLD_H);
+            return { x: canvas.width/2 + dx, y: canvas.height/2 + dy };
+        }
+        
+        // Para dibujar sin "pop": un punto del mundo puede aparecer en pantalla en más de
+        // una posición a la vez (justo cuando está cruzando el borde de envoltura), así que
+        // devolvemos todas las posiciones de pantalla válidas para ese punto (normalmente 1,
+        // hasta 4 si está cerca de cruzar ambos bordes a la vez)
+        function getWrappedScreenPositions(wx, wy, margin) {
+            let dxBase = wrapDelta(camera.x, wx, WORLD_W);
+            let dyBase = wrapDelta(camera.y, wy, WORLD_H);
+            let dxs = [dxBase, dxBase > 0 ? dxBase - WORLD_W : dxBase + WORLD_W];
+            let dys = [dyBase, dyBase > 0 ? dyBase - WORLD_H : dyBase + WORLD_H];
+            let positions = [];
+            for(let dx of dxs) {
+                for(let dy of dys) {
+                    let sx = canvas.width/2 + dx;
+                    let sy = canvas.height/2 + dy;
+                    if(sx > -margin && sx < canvas.width + margin && sy > -margin && sy < canvas.height + margin) {
+                        positions.push({x: sx, y: sy});
+                    }
+                }
+            }
+            return positions;
+        }
+        
+        // ---------- ESTRELLAS DE FONDO ----------
+        // Puntitos blancos fijos en el mundo: al moverte, la cámara se desplaza y las estrellas
+        // se ven pasar en la dirección contraria, dejando clarísimo que te estás moviendo y hacia dónde.
+        const NUM_STARS = 180;
+        let stars = [];
+        function initStars() {
+            stars = [];
+            for(let i=0; i<NUM_STARS; i++) {
+                stars.push({
+                    x: Math.random() * WORLD_W,
+                    y: Math.random() * WORLD_H,
+                    r: 0.8 + Math.random() * 1.8,
+                    a: 0.3 + Math.random() * 0.7
+                });
+            }
+        }
+        initStars();
+        
+        function drawStars() {
+            for(let s of stars) {
+                let positions = getWrappedScreenPositions(s.x, s.y, 20);
+                for(let p of positions) {
+                    ctx.beginPath();
+                    ctx.fillStyle = `rgba(255,255,255,${s.a})`;
+                    ctx.arc(p.x, p.y, s.r, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+        }
+        
+        // Jugador (posición en coordenadas del MUNDO, no de la pantalla)
+        let player = { x: WORLD_W/2, y: WORLD_H/2, size: 18, invincible: 0, pushVx: 0, pushVy: 0 };
+        let move = { up: false, down: false, left: false, right: false };
+        let dashCooldown = 0;
+        const DASH_SHORT = 80;
+        const DASH_COOLDOWN_MAX = 15;
+
+        // ---------- ENEMIGOS ROJOS (proyectiles rápidos) ----------
+        // Igual que en Classic: aparecen en posición relativa al jugador, apuntan y disparan.
+        // A diferencia de Classic, NUNCA desaparecen al salir de pantalla ni al chocar con nada:
+        // envuelven el mundo toroidal igual que el jugador, y solo se apagan por tiempo.
+        let bulletEnemies = []; // { x, y, size, state, aimTimer, targetX, targetY, vx, vy, life, fading, fadeTimer }
+        let redSpawnTimer = 0;
+        const RED_SPAWN_INTERVAL = 120; // 2s a 60fps entre tandas de rojos
+        const RED_AIM_TIME = 35;
+        const RED_SHOOT_SPEED = 16;
+        const RED_LIFE_MAX = 240;       // 4s a 60fps disparados antes de empezar a desvanecerse (0.5s más que antes)
+        const RED_FADE_DURATION = 18;   // 0.3s de desvanecimiento gradual (sin hitbox durante este tramo)
+
+        // ---------- ENEMIGOS LENTOS (aparecen en anillo alrededor de los asteroides) ----------
+        let slowEnemies = []; // { x, y, size, vx, vy, maxSpeed, spawnTimer }
+
+        // Duración compartida de la aparición gradual (lentos + asteroides aparecen a la misma velocidad)
+        const MATERIALIZE_DURATION = 50;
+
+        // ---------- ASTEROIDES ----------
+        let asteroids = []; // { x, y, radius, tier(1|2|3), points, rotation, rotSpeed, vx, vy, spawnTimer }
+        let asteroidSpawnTimer = 0;
+        const ASTEROID_SPAWN_MIN = 240;  // 4s a 60fps
+        const ASTEROID_SPAWN_MAX = 420;  // 7s a 60fps
+        const ASTEROID_TIER1_RADIUS_MIN = 95;
+        const ASTEROID_TIER1_RADIUS_MAX = 130;
+        const ASTEROID_TIER2_RADIUS_MIN = 42;
+        const ASTEROID_TIER2_RADIUS_MAX = 58;
+        const ASTEROID_TIER3_RADIUS_MIN = 16;
+        const ASTEROID_TIER3_RADIUS_MAX = 26;
+        const ASTEROID_SPAWN_DIST_MIN = 620; // lejos del jugador, pero repartidos alrededor suyo
+        const ASTEROID_SPAWN_DIST_MAX = 950;
+
+        // ---------- ESCOMBROS DE ASTEROIDE (al desintegrarse un tier 3) ----------
+        // En vez de desaparecer de golpe, el asteroide chiquito se rompe en segmentos
+        // de su propio borde, que flotan hacia los lados y se desvanecen gradualmente.
+        let asteroidDebris = []; // { x, y, vx, vy, p1x, p1y, p2x, p2y, rotation, rotSpeed, life, maxLife }
+        const DEBRIS_LIFE = 45; // ~0.75s de desvanecimiento
+
+        // ---------- ITEMS DE CURACIÓN (cuadritos verdes, igual que en Classic) ----------
+        let healthItems = []; // { x, y, size, timer }
+        const HEALTH_ITEM_DURATION = 180; // 3 segundos a 60fps
+        const HEALTH_ITEM_SIZE = 10;
+
+        // ---------- BERSERKERS ----------
+        // Enemigo cuerpo a cuerpo agresivo: del tamaño de un rebotón de Metro, gira sobre su
+        // propio eje a gran velocidad y acelera constantemente hacia el jugador (misil térmico).
+        // Tiene 3 vidas: se las puede quitar el jugador (atravesándolo con el dash) o un rojo
+        // (chocándolo a toda velocidad, muriendo el rojo en el impacto). Mientras menos vidas
+        // tiene, más rápido gira y más rápido parpadea de rojo. Al chocar con el jugador lo
+        // empuja con fuerza (en la dirección en la que iba) y rebota con el impacto.
+        let berserkers = []; // { x, y, size, vx, vy, hp, rotation, blinkTimer, spawnTimer, spawnParticles }
+        let berserkerSpawnTimer = 0;
+        const BERSERKER_SPAWN_MIN = 360; // 6s a 60fps
+        const BERSERKER_SPAWN_MAX = 540; // 9s a 60fps
+        const BERSERKER_SIZE = 14 * 1.4 * 2; // el doble de un rebotón del modo Metro
+        const BERSERKER_MAX_HP = 3;
+        const BERSERKER_MAX_SPEED = RED_SHOOT_SPEED * 1.3; // 1.3 veces la velocidad de los rojos
+        const BERSERKER_ACCEL = 0.62; // aceleración hacia el jugador (mucho más agresivo que un enemigo lento)
+        const BERSERKER_SPAWN_DIST_MIN = 500;
+        const BERSERKER_SPAWN_DIST_MAX = 850;
+        const BERSERKER_MATERIALIZE_DURATION = 75; // aparición gradual y épica (más lenta que asteroides/lentos)
+        const BERSERKER_SPAWN_PARTICLES_MIN = 16;
+        const BERSERKER_SPAWN_PARTICLES_MAX = 24;
+        const BERSERKER_SPAWN_RADIUS = 170; // desde dónde convergen las partículas de aparición (ajustado al tamaño nuevo)
+        const BERSERKER_DASH_BRAKE = 0.15;  // cuánta velocidad conserva al ser atravesado por el dash (se frena bastante)
+        const BERSERKER_DASH_KNOCKBACK = 22; // velocidad del rebote hacia el lado contrario del dash
+        const BERSERKER_RED_BRAKE = 0.8;    // cuánta velocidad conserva al chocar con un rojo
+        const BERSERKER_BOUNCE_FACTOR = 0.55; // rebote al golpear al jugador
+        const BERSERKER_PLAYER_PUSH = 14;    // fuerza del empujón que recibe el jugador al ser golpeado (mucho más fuerte)
+        const BERSERKER_PUSH_FRICTION = 0.90; // qué tan rápido se disipa ese empujón
+
+        function spawnBerserker() {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = randRange(BERSERKER_SPAWN_DIST_MIN, BERSERKER_SPAWN_DIST_MAX);
+            const x = wrapCoord(player.x + Math.cos(angle) * distance, WORLD_W);
+            const y = wrapCoord(player.y + Math.sin(angle) * distance, WORLD_H);
+
+            const particleCount = randInt(BERSERKER_SPAWN_PARTICLES_MIN, BERSERKER_SPAWN_PARTICLES_MAX);
+            const spawnParticles = [];
+            for(let i=0; i<particleCount; i++) {
+                spawnParticles.push({
+                    angle: Math.random() * Math.PI * 2,
+                    dist: BERSERKER_SPAWN_RADIUS * (0.55 + Math.random() * 0.55)
+                });
+            }
+
+            berserkers.push({
+                x, y, size: BERSERKER_SIZE,
+                vx: 0, vy: 0,
+                hp: BERSERKER_MAX_HP,
+                rotation: Math.random() * Math.PI * 2,
+                blinkTimer: 0,
+                spawnTimer: BERSERKER_MATERIALIZE_DURATION,
+                spawnParticles,
+                justBrokeGiant: 0 // logro "i choose DEATH!": frames desde que atravesó un asteroide grande
+            });
+        }
+
+        // Golpe del berserker contra el jugador: quita 2 de vida, lo empuja con fuerza en la
+        // dirección en la que iba el berserker, y el berserker rebota con el choque.
+        function berserkerHitPlayer(b) {
+            if(player.invincible > 0 || gameOver) return;
+            hp -= 2;
+            tookDamageThisRun = true; // logro "Dash God": ya no se puede conseguir esta partida
+            { const hitPos = worldToScreen(player.x, player.y); Cosmetics.onPlayerHit(hitPos.x, hitPos.y); } // skin-hit-rings
+            triggerDamageFlash();
+            if(hp <= 0) {
+                hp = 0;
+                gameOver = true;
+                // Logro "i choose DEATH!": este berserker acaba de atravesar un asteroide
+                // grande (tier 1) hace muy poco, y encima nos mató.
+                if (b.justBrokeGiant > 0) {
+                    Achievements.tryUnlock('i-choose-death', Achievements.MODES.SQUASTEROIDS);
+                }
+                updateUI();
+                stopMusic();
+                menuBtn.classList.remove('hidden');
+            } else {
+                updateUI();
+                player.invincible = 20;
+            }
+
+            const speed = Math.hypot(b.vx, b.vy);
+            if(speed > 0.01) {
+                player.pushVx = (player.pushVx || 0) + (b.vx / speed) * BERSERKER_PLAYER_PUSH;
+                player.pushVy = (player.pushVy || 0) + (b.vy / speed) * BERSERKER_PLAYER_PUSH;
+            }
+
+            b.vx *= -BERSERKER_BOUNCE_FACTOR;
+            b.vy *= -BERSERKER_BOUNCE_FACTOR;
+        }
+
+        function updateBerserkers() {
+            for(let i=0; i<berserkers.length; i++) {
+                const b = berserkers[i];
+                b.blinkTimer++;
+
+                // Gira sobre su propio eje: mientras menos vidas tiene, más rápido gira
+                const rotSpeed = 0.28 + (BERSERKER_MAX_HP - b.hp) * 0.14;
+                b.rotation += rotSpeed;
+
+                if(b.spawnTimer > 0) {
+                    b.spawnTimer--; // sigue apareciendo: no se mueve ni colisiona todavía
+                    continue;
+                }
+
+                // Acelera constantemente hacia el jugador (mundo toroidal); si se pasa de largo,
+                // el vector de aceleración ahora apunta "hacia atrás" y lo frena hasta devolverlo.
+                const dx = wrapDelta(b.x, player.x, WORLD_W);
+                const dy = wrapDelta(b.y, player.y, WORLD_H);
+                const dist = Math.hypot(dx, dy);
+                if(dist > 0.01) {
+                    const dirX = dx / dist;
+                    const dirY = dy / dist;
+                    b.vx += dirX * BERSERKER_ACCEL;
+                    b.vy += dirY * BERSERKER_ACCEL;
+                    const spd = Math.hypot(b.vx, b.vy);
+                    if(spd > BERSERKER_MAX_SPEED) {
+                        b.vx = (b.vx / spd) * BERSERKER_MAX_SPEED;
+                        b.vy = (b.vy / spd) * BERSERKER_MAX_SPEED;
+                    }
+                }
+
+                b.x = wrapCoord(b.x + b.vx, WORLD_W);
+                b.y = wrapCoord(b.y + b.vy, WORLD_H);
+
+                if(b.justBrokeGiant > 0) b.justBrokeGiant--; // logro "i choose DEATH!": se enfría solo
+
+                // Rompe cualquier asteroide que toque a su paso, sin frenarse
+                for(let j=0; j<asteroids.length; j++) {
+                    const a = asteroids[j];
+                    if(a.spawnTimer > 0) continue;
+                    if(worldDist(b.x, b.y, a.x, a.y) < a.radius * 0.8) {
+                        if(a.tier === 1) b.justBrokeGiant = 240; // "acaba de" atravesar uno grande: ventana de 4s
+                        breakAsteroid(j, false);
+                        break;
+                    }
+                }
+
+                // Mata enemigos lentos a su paso
+                for(let j=0; j<slowEnemies.length; j++) {
+                    const e = slowEnemies[j];
+                    if(e.spawnTimer > 0) continue;
+                    if(worldDist(b.x, b.y, e.x, e.y) < (e.size/2 + b.size/2)) {
+                        slowEnemies.splice(j, 1);
+                        break;
+                    }
+                }
+
+                // Choque con un rojo a toda velocidad: el rojo muere, el berserker pierde una vida
+                for(let j=0; j<bulletEnemies.length; j++) {
+                    const r = bulletEnemies[j];
+                    if(r.state !== 'shooting') continue;
+                    if(worldDist(b.x, b.y, r.x, r.y) < (b.size/2 + r.size/2)) {
+                        bulletEnemies.splice(j, 1);
+                        b.hp--;
+                        playBerserkerHitSound();
+                        b.vx *= BERSERKER_RED_BRAKE;
+                        b.vy *= BERSERKER_RED_BRAKE;
+                        break;
+                    }
+                }
+
+                if(b.hp <= 0) {
+                    berserkers.splice(i, 1);
+                    i--;
+                    continue;
+                }
+
+                // Choque con el jugador
+                if(player.invincible === 0 && !gameOver && worldDist(player.x, player.y, b.x, b.y) < (player.size/2 + b.size/2)) {
+                    berserkerHitPlayer(b);
+                }
+            }
+        }
+
+        function spawnHealthItem(x, y, fromSniperKill, fromPurpKill) {
+            healthItems.push({
+                x: x, y: y,
+                size: HEALTH_ITEM_SIZE,
+                timer: HEALTH_ITEM_DURATION,
+                fromSniperKill: !!fromSniperKill, // logro "SniperOfSnipers": hay que comerse esta cajita puntual
+                fromPurpKill: !!fromPurpKill       // logro "Purpnocide": cajita dejada por un Purp
+            });
+        }
+
+        function updateHealthItems() {
+            for(let i=0; i<healthItems.length; i++) {
+                let item = healthItems[i];
+                item.timer--;
+                if(item.timer <= 0) {
+                    if (item.fromPurpKill) purpnocideMissed = true; // se dejó vencer una cajita de Purp
+                    healthItems.splice(i,1);
+                    i--;
+                    continue;
+                }
+                if(worldDist(player.x, player.y, item.x, item.y) < player.size/2 + item.size/2) {
+                    healPlayer();
+                    if (item.fromSniperKill) {
+                        Achievements.tryUnlock('sniper-of-snipers', Achievements.MODES.SQUASTEROIDS);
+                    }
+                    if (item.fromPurpKill) {
+                        purpItemsEatenThisRun++;
+                        if (purpKillsThisRun >= 30 && !purpnocideMissed && purpItemsEatenThisRun >= purpKillsThisRun) {
+                            Achievements.tryUnlock('purpnocide', Achievements.MODES.SQUASTEROIDS);
+                        }
+                    }
+                    healthItems.splice(i,1);
+                    i--;
+                }
+            }
+        }
+        
+        function updateUI() {
+            document.getElementById('hp').innerText = hp;
+            document.getElementById('score').innerText = score;
+        }
+        
+        function healPlayer() {
+            if (hp < 3) {
+                hp++;
+                updateUI();
+                playHealSound();
+                return true;
+            }
+            return false;
+        }
+        
+        function damagePlayer() {
+            if(player.invincible > 0 || gameOver) return;
+            hp--;
+            tookDamageThisRun = true; // logro "Dash God": ya no se puede conseguir esta partida
+            { const hitPos = worldToScreen(player.x, player.y); Cosmetics.onPlayerHit(hitPos.x, hitPos.y); } // skin-hit-rings
+            triggerDamageFlash();
+            updateUI();
+            if(hp <= 0) {
+                gameOver = true;
+                hp = 0;
+                updateUI();
+                stopMusic();
+                menuBtn.classList.remove('hidden');
+            } else {
+                player.invincible = 20;
+            }
+        }
+        
+        function addScore(amount) {
+            score += amount;
+            updateUI();
+        }
+
+        // ---------- FORMA Y CREACIÓN DE ASTEROIDES ----------
+        function generateAsteroidPoints(radius) {
+            const vertexCount = randInt(9, 14);
+            const points = [];
+            for(let i=0; i<vertexCount; i++) {
+                const angle = (i / vertexCount) * Math.PI * 2;
+                const r = radius * (0.72 + Math.random() * 0.34); // irregularidad tipo roca
+                points.push({ angle, r });
+            }
+            return points;
+        }
+
+        function createAsteroid(x, y, tier, materialize) {
+            let radius;
+            if(tier === 1) radius = randRange(ASTEROID_TIER1_RADIUS_MIN, ASTEROID_TIER1_RADIUS_MAX);
+            else if(tier === 2) radius = randRange(ASTEROID_TIER2_RADIUS_MIN, ASTEROID_TIER2_RADIUS_MAX);
+            else radius = randRange(ASTEROID_TIER3_RADIUS_MIN, ASTEROID_TIER3_RADIUS_MAX);
+
+            return {
+                x: wrapCoord(x, WORLD_W), y: wrapCoord(y, WORLD_H),
+                radius: radius,
+                tier: tier,
+                points: generateAsteroidPoints(radius),
+                rotation: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 0.01,
+                vx: 0, vy: 0,
+                spawnTimer: materialize ? MATERIALIZE_DURATION : 0
+            };
+        }
+
+        // Anillo de 7-14 enemigos lentos rodeando un asteroide recién aparecido
+        function spawnSlowRingAround(cx, cy, asteroidRadius) {
+            const count = randInt(7, 14);
+            const ringRadius = asteroidRadius + 45 + Math.random() * 25;
+            const angleOffset = Math.random() * Math.PI * 2;
+            for(let i=0; i<count; i++) {
+                const angle = angleOffset + (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.15;
+                const x = cx + Math.cos(angle) * ringRadius;
+                const y = cy + Math.sin(angle) * ringRadius;
+                slowEnemies.push({
+                    x: wrapCoord(x, WORLD_W), y: wrapCoord(y, WORLD_H),
+                    size: 14, vx: 0, vy: 0, maxSpeed: 2.0,
+                    spawnTimer: MATERIALIZE_DURATION
+                });
+            }
+        }
+
+        // Grupo de 2-4 asteroides grandes, lejos del jugador pero repartidos alrededor suyo
+        // en sectores separados, cada uno con su propio anillo de enemigos lentos
+        function spawnAsteroidGroup() {
+            const count = randInt(2, 4);
+            const sectorSize = (Math.PI * 2) / count;
+            const baseAngle = Math.random() * Math.PI * 2;
+            for(let i=0; i<count; i++) {
+                const angle = baseAngle + i * sectorSize + (Math.random() - 0.5) * sectorSize * 0.4;
+                const distance = randRange(ASTEROID_SPAWN_DIST_MIN, ASTEROID_SPAWN_DIST_MAX);
+                const x = player.x + Math.cos(angle) * distance;
+                const y = player.y + Math.sin(angle) * distance;
+                const asteroid = createAsteroid(x, y, 1, true);
+                asteroids.push(asteroid);
+                spawnSlowRingAround(asteroid.x, asteroid.y, asteroid.radius);
+            }
+        }
+
+        // Rojos: igual que en Classic, en tandas relativas a la posición del jugador
+        function spawnRedEnemyGroup() {
+            const count = randInt(2, 4);
+            for(let g=0; g<count; g++) {
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 350 + Math.random() * 100;
+                const x = wrapCoord(player.x + Math.cos(angle) * distance, WORLD_W);
+                const y = wrapCoord(player.y + Math.sin(angle) * distance, WORLD_H);
+                bulletEnemies.push({
+                    x: x, y: y, size: 10,
+                    state: 'aiming', aimTimer: RED_AIM_TIME,
+                    targetX: player.x, targetY: player.y,
+                    vx: 0, vy: 0,
+                    life: 0, fading: false, fadeTimer: 0
+                });
+            }
+        }
+
+        // Genera los segmentos del borde del asteroide como escombros flotantes que se desvanecen
+        function spawnAsteroidDebris(a) {
+            const n = a.points.length;
+            for(let i=0; i<n; i++) {
+                const p1a = a.points[i];
+                const p2a = a.points[(i+1) % n];
+                const x1 = Math.cos(p1a.angle) * p1a.r;
+                const y1 = Math.sin(p1a.angle) * p1a.r;
+                const x2 = Math.cos(p2a.angle) * p2a.r;
+                const y2 = Math.sin(p2a.angle) * p2a.r;
+                const midAngle = Math.atan2((y1+y2)/2, (x1+x2)/2) + a.rotation;
+                const speed = 0.7 + Math.random() * 1.3;
+                asteroidDebris.push({
+                    x: a.x, y: a.y,
+                    p1x: x1, p1y: y1, p2x: x2, p2y: y2,
+                    vx: Math.cos(midAngle) * speed, vy: Math.sin(midAngle) * speed,
+                    rotation: a.rotation,
+                    rotSpeed: (Math.random() - 0.5) * 0.09,
+                    life: DEBRIS_LIFE, maxLife: DEBRIS_LIFE
+                });
+            }
+        }
+
+        // Rompe un asteroide en pedazos más chicos (tier 1 -> 2 -> 3 -> desintegrado).
+        // Tanto los rojos como el dash del jugador pueden romper cualquier tier.
+        // Solo cuando lo rompe el JUGADOR se suman 15 puntos (sin importar cuánto se astilla).
+        function breakAsteroid(index, byPlayer) {
+            const a = asteroids[index];
+            asteroids.splice(index, 1);
+
+            if(a.tier === 1) {
+                const pieces = randInt(3, 5);
+                for(let i=0; i<pieces; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = a.radius * 0.3;
+                    const piece = createAsteroid(a.x + Math.cos(angle)*dist, a.y + Math.sin(angle)*dist, 2, false);
+                    const speed = 0.4 + Math.random() * 0.5;
+                    piece.vx = Math.cos(angle) * speed;
+                    piece.vy = Math.sin(angle) * speed;
+                    asteroids.push(piece);
+                }
+            } else if(a.tier === 2) {
+                const pieces = randInt(2, 4);
+                for(let i=0; i<pieces; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = a.radius * 0.3;
+                    const piece = createAsteroid(a.x + Math.cos(angle)*dist, a.y + Math.sin(angle)*dist, 3, false);
+                    const speed = 0.6 + Math.random() * 0.7;
+                    piece.vx = Math.cos(angle) * speed;
+                    piece.vy = Math.sin(angle) * speed;
+                    asteroids.push(piece);
+                }
+            } else {
+                // tier 3: no deja pedazos nuevos, se desintegra en segmentos de borde que flotan y se desvanecen
+                spawnAsteroidDebris(a);
+            }
+
+            if(byPlayer) addScore(15);
+        }
+
+        function updateAsteroidDebris() {
+            for(let i=0; i<asteroidDebris.length; i++) {
+                const d = asteroidDebris[i];
+                d.x = wrapCoord(d.x + d.vx, WORLD_W);
+                d.y = wrapCoord(d.y + d.vy, WORLD_H);
+                d.rotation += d.rotSpeed;
+                d.life--;
+                if(d.life <= 0) {
+                    asteroidDebris.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        // ---------- ACTUALIZACIÓN DE ASTEROIDES Y ENEMIGOS ----------
+        function updateAsteroids() {
+            for(let i=0; i<asteroids.length; i++) {
+                const a = asteroids[i];
+                if(a.spawnTimer > 0) { a.spawnTimer--; continue; } // sigue apareciendo: no colisiona ni se mueve
+
+                a.x = wrapCoord(a.x + a.vx, WORLD_W);
+                a.y = wrapCoord(a.y + a.vy, WORLD_H);
+                a.rotation += a.rotSpeed;
+
+                if(player.invincible === 0 && !gameOver && worldDist(player.x, player.y, a.x, a.y) < (player.size/2 + a.radius*0.75)) {
+                    damagePlayer();
+                }
+            }
+        }
+
+        function updateSlowEnemiesSquasteroids() {
+            for(let i=0; i<slowEnemies.length; i++) {
+                let e = slowEnemies[i];
+                if(e.spawnTimer > 0) { e.spawnTimer--; continue; } // no se mueven hasta terminar de aparecer
+
+                let dx = wrapDelta(e.x, player.x, WORLD_W);
+                let dy = wrapDelta(e.y, player.y, WORLD_H);
+                let dist = Math.hypot(dx, dy);
+                if(dist > 0.01) {
+                    let dirX = dx / dist;
+                    let dirY = dy / dist;
+                    e.vx += dirX * 0.1;
+                    e.vy += dirY * 0.1;
+                    let spd = Math.hypot(e.vx, e.vy);
+                    if(spd > e.maxSpeed) {
+                        e.vx = (e.vx / spd) * e.maxSpeed;
+                        e.vy = (e.vy / spd) * e.maxSpeed;
+                    }
+                }
+                e.x = wrapCoord(e.x + e.vx, WORLD_W);
+                e.y = wrapCoord(e.y + e.vy, WORLD_H);
+
+                if(player.invincible === 0 && !gameOver && worldDist(player.x, player.y, e.x, e.y) < (player.size/2 + e.size/2)) {
+                    damagePlayer();
+                }
+            }
+        }
+
+        function updateRedEnemies() {
+            for(let i=0; i<bulletEnemies.length; i++) {
+                let b = bulletEnemies[i];
+
+                if(b.state === 'aiming') {
+                    b.aimTimer--;
+                    b.targetX = player.x;
+                    b.targetY = player.y;
+                    if(b.aimTimer <= 0) {
+                        b.state = 'shooting';
+                        let dx = wrapDelta(b.x, player.x, WORLD_W);
+                        let dy = wrapDelta(b.y, player.y, WORLD_H);
+                        let dist = Math.hypot(dx, dy);
+                        if(dist > 0.01) {
+                            b.vx = (dx / dist) * RED_SHOOT_SPEED;
+                            b.vy = (dy / dist) * RED_SHOOT_SPEED;
+                        }
+                    }
+                    continue;
+                }
+
+                // Disparado: envuelve el mundo en vez de desaparecer en los "bordes" (no hay bordes)
+                b.x = wrapCoord(b.x + b.vx, WORLD_W);
+                b.y = wrapCoord(b.y + b.vy, WORLD_H);
+                b.life++;
+
+                // A los 4s empieza a desvanecerse gradualmente durante 0.3s; el hitbox
+                // se desactiva apenas empieza a desvanecerse (ya no puede golpear al jugador)
+                if(!b.fading && b.life >= RED_LIFE_MAX) {
+                    b.fading = true;
+                    b.fadeTimer = RED_FADE_DURATION;
+                }
+                if(b.fading) {
+                    b.fadeTimer--;
+                    if(b.fadeTimer <= 0) {
+                        bulletEnemies.splice(i, 1);
+                        i--;
+                        continue;
+                    }
+                }
+
+                // Rompe cualquier asteroide (grande, mediano o chico) al atravesarlo,
+                // pero sigue de largo (no se destruye)
+                for(let j=0; j<asteroids.length; j++) {
+                    const a = asteroids[j];
+                    if(a.spawnTimer <= 0 && worldDist(b.x, b.y, a.x, a.y) < a.radius * 0.8) {
+                        breakAsteroid(j, false);
+                        break;
+                    }
+                }
+
+                // Mata enemigos lentos al atravesarlos (mismos puntos que en Classic, sin item de vida)
+                for(let j=0; j<slowEnemies.length; j++) {
+                    const e = slowEnemies[j];
+                    if(e.spawnTimer <= 0 && worldDist(b.x, b.y, e.x, e.y) < (e.size/2 + b.size/2)) {
+                        slowEnemies.splice(j, 1);
+                        addScore(50);
+                        break;
+                    }
+                }
+
+                if(!b.fading && player.invincible === 0 && !gameOver && worldDist(player.x, player.y, b.x, b.y) < (player.size/2 + b.size/2)) {
+                    damagePlayer();
+                    // Muere individualmente al chocar contra el jugador (los demás rojos siguen de largo)
+                    bulletEnemies.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        function updateSpawnersSquasteroids() {
+            if(gameOver) return;
+
+            if(redSpawnTimer <= 0) {
+                spawnRedEnemyGroup();
+                redSpawnTimer = RED_SPAWN_INTERVAL;
+            } else redSpawnTimer--;
+
+            if(asteroidSpawnTimer <= 0) {
+                spawnAsteroidGroup();
+                asteroidSpawnTimer = randInt(ASTEROID_SPAWN_MIN, ASTEROID_SPAWN_MAX);
+            } else asteroidSpawnTimer--;
+
+            if(berserkerSpawnTimer <= 0) {
+                spawnBerserker();
+                berserkerSpawnTimer = randInt(BERSERKER_SPAWN_MIN, BERSERKER_SPAWN_MAX);
+            } else berserkerSpawnTimer--;
+        }
+        
+        function resetGame() {
+            hp = 3;
+            score = 0;
+            gameOver = false;
+            timeScoreCounter = 0;
+            gameTimeFrames = 0;
+            player.x = WORLD_W/2;
+            player.y = WORLD_H/2;
+            player.invincible = 0;
+            player.pushVx = 0;
+            player.pushVy = 0;
+            dashCooldown = 0;
+            dashTrail.active = false;
+            straightAxis = null;
+            straightAccumPx = 0;
+            bulletEnemies = [];
+            slowEnemies = [];
+            asteroids = [];
+            asteroidDebris = [];
+            healthItems = [];
+            berserkers = [];
+            Cosmetics.resetEffects();
+            berserkerSpawnTimer = randInt(BERSERKER_SPAWN_MIN, BERSERKER_SPAWN_MAX);
+            tookDamageThisRun = false;
+            purpKillsThisRun = 0;
+            purpItemsEatenThisRun = 0;
+            purpnocideMissed = false;
+            camera.x = player.x;
+            camera.y = player.y;
+            updateUI();
+            document.getElementById('gameTime').innerText = formatGameTime(0);
+            menuBtn.classList.add('hidden');
+            restartMusic();
+        }
+        
+        // ---- Logro "No Euclidian": dar la vuelta completa al mundo en línea recta ----
+        let straightAxis = null;   // 'x' o 'y' — eje de la racha actual en línea recta, o null si se rompió
+        let straightAccumPx = 0;   // píxeles recorridos sin cortar la racha
+        const STRAIGHT_AXIS_EPS = 0.02; // tolerancia para considerar "puro" un eje (evita diagonales colándose)
+
+        function updateNoEuclidianTracking(dirX, dirY, distMoved, pushing) {
+            const isHorizontalOnly = Math.abs(dirX) > STRAIGHT_AXIS_EPS && Math.abs(dirY) <= STRAIGHT_AXIS_EPS;
+            const isVerticalOnly = Math.abs(dirY) > STRAIGHT_AXIS_EPS && Math.abs(dirX) <= STRAIGHT_AXIS_EPS;
+            if (pushing || (!isHorizontalOnly && !isVerticalOnly)) {
+                straightAxis = null;
+                straightAccumPx = 0;
+                return;
+            }
+            const axis = isHorizontalOnly ? 'x' : 'y';
+            if (straightAxis !== axis) {
+                straightAxis = axis;
+                straightAccumPx = 0;
+            }
+            straightAccumPx += distMoved;
+            const worldSize = axis === 'x' ? WORLD_W : WORLD_H;
+            if (straightAccumPx >= worldSize) {
+                Achievements.tryUnlock('no-euclidian', Achievements.MODES.SQUASTEROIDS);
+                straightAxis = null;
+                straightAccumPx = 0;
+            }
+        }
+
+        // Movimiento del jugador (en coordenadas del mundo, envuelve en los 4 bordes)
+        function updatePlayerMovement() {
+            let speed = 4.8;
+            let dx = 0, dy = 0;
+            if(move.up) dy -= 1;
+            if(move.down) dy += 1;
+            if(move.left) dx -= 1;
+            if(move.right) dx += 1;
+
+            if(joystick.active && (joystick.dx !== 0 || joystick.dy !== 0)) {
+                dx = joystick.dx;
+                dy = joystick.dy;
+                let len = Math.hypot(dx, dy);
+                if(len > 1) { dx /= len; dy /= len; }
+                player.x += dx * speed;
+                player.y += dy * speed;
+            } else if(dx !== 0 || dy !== 0) {
+                let len = Math.hypot(dx, dy);
+                dx /= len;
+                dy /= len;
+                player.x += dx * speed;
+                player.y += dy * speed;
+            }
+
+            const pushing = Math.abs(player.pushVx || 0) > 0.05 || Math.abs(player.pushVy || 0) > 0.05;
+            const distMoved = (dx !== 0 || dy !== 0) ? speed * Math.hypot(dx, dy) : 0;
+            updateNoEuclidianTracking(dx, dy, distMoved, pushing);
+
+            // Empujón recibido al ser golpeado por un berserker: se disipa solo con fricción,
+            // se siente como un golpe real en vez de un salto brusco de posición.
+            if(player.pushVx || player.pushVy) {
+                player.x += player.pushVx;
+                player.y += player.pushVy;
+                player.pushVx *= BERSERKER_PUSH_FRICTION;
+                player.pushVy *= BERSERKER_PUSH_FRICTION;
+                if(Math.abs(player.pushVx) < 0.05) player.pushVx = 0;
+                if(Math.abs(player.pushVy) < 0.05) player.pushVy = 0;
+            }
+            
+            player.x = wrapCoord(player.x, WORLD_W);
+            player.y = wrapCoord(player.y, WORLD_H);
+        }
+        
+        // DASH con laser: atraviesa y rompe asteroides medianos/pequeños en su trayectoria
+        function performDash(dirX, dirY) {
+            if(dashCooldown > 0 || gameOver) return;
+            if(dirX === 0 && dirY === 0) return;
+            let len = Math.hypot(dirX, dirY);
+            dirX /= len;
+            dirY /= len;
+            
+            let dashDistance = DASH_SHORT;
+            
+            const startX = player.x;
+            const startY = player.y;
+            const endX = player.x + dirX * dashDistance;
+            const endY = player.y + dirY * dashDistance;
+            
+            // ACTIVAR EL LASER DE DASH (destello) — guardado en coordenadas del mundo
+            dashTrail.active = true;
+            dashTrail.x1 = startX;
+            dashTrail.y1 = startY;
+            dashTrail.x2 = endX;
+            dashTrail.y2 = endY;
+            dashTrail.timer = DASH_TRAIL_DURATION;
+            Cosmetics.triggerDashBorderGlow(MODE_DASH_COLOR); // skin-border-glow
+
+            // ROMPER ASTEROIDES QUE EL LASER ATRAVIESA (solo tier 2 y 3; el tier 1 solo lo rompen los rojos)
+            for(let i=0; i<asteroids.length; i++) {
+                const a = asteroids[i];
+                if(a.tier === 1 || a.spawnTimer > 0) continue;
+                const distToLaser = pointToSegmentDistance(a.x, a.y, startX, startY, endX, endY);
+                if(distToLaser < a.radius + 8) {
+                    breakAsteroid(i, true);
+                    i--;
+                }
+            }
+
+            // MATAR ENEMIGOS LENTOS QUE EL LASER ATRAVIESA (dejan cajita de vida verde, igual que Classic)
+            for(let i=0; i<slowEnemies.length; i++) {
+                const e = slowEnemies[i];
+                if(e.spawnTimer > 0) continue;
+                const distToLaser = pointToSegmentDistance(e.x, e.y, startX, startY, endX, endY);
+                if(distToLaser < e.size/2 + 8) {
+                    const enemyX = e.x, enemyY = e.y;
+                    slowEnemies.splice(i, 1);
+                    i--;
+                    addScore(50);
+                    purpKillsThisRun++; // logro "Purpnocide"
+                    spawnHealthItem(enemyX, enemyY, false, true);
+                }
+            }
+
+            // ATRAVESAR BERSERKERS CON EL DASH: se frenan bastante y pierden una vida.
+            // Si esa vida era la última, se destruyen y dejan cajita de vida verde.
+            for(let i=0; i<berserkers.length; i++) {
+                const b = berserkers[i];
+                if(b.spawnTimer > 0) continue;
+                const distToLaser = pointToSegmentDistance(b.x, b.y, startX, startY, endX, endY);
+                if(distToLaser < b.size/2 + 8) {
+                    // Rebote hacia el lado contrario al dash (si el dash fue a la izquierda, el golpe manda al berserker a la derecha)
+                    b.vx = -dirX * BERSERKER_DASH_KNOCKBACK + b.vx * BERSERKER_DASH_BRAKE;
+                    b.vy = -dirY * BERSERKER_DASH_KNOCKBACK + b.vy * BERSERKER_DASH_BRAKE;
+                    b.hp--;
+                    playBerserkerHitSound();
+                    if(b.hp <= 0) {
+                        const bx = b.x, by = b.y;
+                        berserkers.splice(i, 1);
+                        i--;
+                        addScore(120);
+                        spawnHealthItem(bx, by);
+                    }
+                }
+            }
+            
+            // ATRAVESAR REDST (rojos) CON EL DASH: mismo comportamiento que en Classic/Metro.
+            // Si el láser lo atraviesa "aiming" (todavía no arrancó su trayecto) => ShortDistance.
+            // Si lo atraviesa "shooting" (en pleno trayecto) => deja la cajita marcada
+            // para SniperOfSnipers (se confirma al comerla, no al matar).
+            for(let i=0; i<bulletEnemies.length; i++) {
+                const b = bulletEnemies[i];
+                const distToLaser = pointToSegmentDistance(b.x, b.y, startX, startY, endX, endY);
+                if(distToLaser < b.size/2 + 3) {
+                    const enemyX = b.x, enemyY = b.y;
+                    const sourceKind = (b.state === 'aiming') ? 'redst-aiming' : 'redst-shooting';
+                    bulletEnemies.splice(i, 1);
+                    i--;
+                    addScore(50);
+                    if (sourceKind === 'redst-aiming') {
+                        Achievements.tryUnlock('short-distance', Achievements.MODES.SQUASTEROIDS);
+                    }
+                    spawnHealthItem(enemyX, enemyY, sourceKind === 'redst-shooting');
+                }
+            }
+
+            player.x = wrapCoord(endX, WORLD_W);
+            player.y = wrapCoord(endY, WORLD_H);
+            
+            dashCooldown = DASH_COOLDOWN_MAX;
+            player.invincible = 8;
+        }
+        
+        // Actualizar dash trail
+        function updateDashTrail() {
+            if(dashTrail.active) {
+                dashTrail.timer--;
+                if(dashTrail.timer <= 0) {
+                    dashTrail.active = false;
+                }
+            }
+        }
+        
+        // ---------- DIBUJADO DE ASTEROIDES Y ENEMIGOS ----------
+        function drawHealthItems() {
+            for(let item of healthItems) {
+                const alpha = Math.min(1, item.timer / 30);
+                let positions = getWrappedScreenPositions(item.x, item.y, item.size + 10);
+                for(let p of positions) {
+                    ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = "lime";
+                    ctx.fillRect(p.x - item.size/2, p.y - item.size/2, item.size, item.size);
+                    ctx.fillStyle = `rgba(200, 255, 100, ${alpha})`;
+                    ctx.fillRect(p.x - item.size/4, p.y - item.size/4, item.size/2, item.size/2);
+                }
+            }
+            ctx.shadowBlur = 0;
+        }
+
+        function drawAsteroidDebris() {
+            for(let d of asteroidDebris) {
+                const alpha = d.life / d.maxLife;
+                let positions = getWrappedScreenPositions(d.x, d.y, 40);
+                for(let p of positions) {
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(d.rotation);
+                    ctx.globalAlpha = alpha;
+                    ctx.beginPath();
+                    ctx.moveTo(d.p1x, d.p1y);
+                    ctx.lineTo(d.p2x, d.p2y);
+                    ctx.strokeStyle = "#c98dff";
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = "#a64dff";
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+        }
+
+        function drawAsteroids() {
+            for(let a of asteroids) {
+                const appearing = a.spawnTimer > 0;
+                const alpha = appearing ? 1 - (a.spawnTimer / MATERIALIZE_DURATION) : 1;
+                const scale = appearing ? 0.3 + 0.7 * alpha : 1;
+                let positions = getWrappedScreenPositions(a.x, a.y, a.radius + 20);
+                for(let p of positions) {
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(a.rotation);
+                    ctx.globalAlpha = alpha;
+                    ctx.beginPath();
+                    for(let i=0; i<a.points.length; i++) {
+                        const pt = a.points[i];
+                        const r = pt.r * scale;
+                        const px = Math.cos(pt.angle) * r;
+                        const py = Math.sin(pt.angle) * r;
+                        if(i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.fillStyle = "#241a33";
+                    ctx.strokeStyle = "#c98dff";
+                    ctx.lineWidth = 2.5;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = "#a64dff";
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.restore();
+                }
+            }
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+        }
+
+        function drawSlowEnemies() {
+            const purpColors = Cosmetics.getPurpColors("#b77eff", "#ffaaff");
+            for(let e of slowEnemies) {
+                const alpha = e.spawnTimer > 0 ? 1 - (e.spawnTimer / MATERIALIZE_DURATION) : 1;
+                let positions = getWrappedScreenPositions(e.x, e.y, e.size + 10);
+                for(let p of positions) {
+                    ctx.globalAlpha = alpha;
+                    ctx.fillStyle = purpColors.outer;
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = purpColors.outer;
+                    ctx.fillRect(p.x - e.size/2, p.y - e.size/2, e.size, e.size);
+                    ctx.fillStyle = purpColors.inner;
+                    ctx.fillRect(p.x - e.size/4, p.y - e.size/4, e.size/2, e.size/2);
+                }
+            }
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+        }
+
+        // Colores del berserker: cuerpo naranja-rojizo que se va poniendo más rojo y parpadea
+        // más rápido mientras menos vidas le quedan.
+        const BERSERKER_BASE_COLOR = { r: 255, g: 95, b: 40 };
+        const BERSERKER_BLINK_COLOR = { r: 255, g: 15, b: 15 };
+
+        function drawBerserkers() {
+            for(let b of berserkers) {
+                let positions = getWrappedScreenPositions(b.x, b.y, BERSERKER_SPAWN_RADIUS + 30);
+
+                if(b.spawnTimer > 0) {
+                    // Aparición gradual y épica: la zona se ilumina y partículas convergen al centro
+                    const progress = 1 - (b.spawnTimer / BERSERKER_MATERIALIZE_DURATION);
+                    for(let p of positions) {
+                        const glowR = 55 + 45 * (1 - progress);
+                        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+                        grad.addColorStop(0, `rgba(255,100,40,${0.4 * progress})`);
+                        grad.addColorStop(1, 'rgba(255,100,40,0)');
+                        ctx.fillStyle = grad;
+                        ctx.beginPath();
+                        ctx.arc(p.x, p.y, glowR, 0, Math.PI*2);
+                        ctx.fill();
+
+                        ctx.shadowBlur = 6;
+                        ctx.shadowColor = "#ff5522";
+                        for(let part of b.spawnParticles) {
+                            const curDist = part.dist * (1 - progress);
+                            const px = p.x + Math.cos(part.angle) * curDist;
+                            const py = p.y + Math.sin(part.angle) * curDist;
+                            ctx.beginPath();
+                            ctx.fillStyle = `rgba(255,160,70,${0.25 + 0.65 * progress})`;
+                            ctx.arc(px, py, 2 + 1.5 * progress, 0, Math.PI*2);
+                            ctx.fill();
+                        }
+                    }
+                    ctx.shadowBlur = 0;
+                    continue;
+                }
+
+                // Parpadeo rojo: la frecuencia aumenta mientras menos vidas tiene
+                const blinkSpeed = 0.05 + (BERSERKER_MAX_HP - b.hp) * 0.06;
+                const blink = 0.5 + 0.5 * Math.sin(b.blinkTimer * blinkSpeed);
+                const cr = Math.round(BERSERKER_BASE_COLOR.r + (BERSERKER_BLINK_COLOR.r - BERSERKER_BASE_COLOR.r) * blink);
+                const cg = Math.round(BERSERKER_BASE_COLOR.g + (BERSERKER_BLINK_COLOR.g - BERSERKER_BASE_COLOR.g) * blink);
+                const cb = Math.round(BERSERKER_BASE_COLOR.b + (BERSERKER_BLINK_COLOR.b - BERSERKER_BASE_COLOR.b) * blink);
+
+                for(let p of positions) {
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(b.rotation);
+                    ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
+                    ctx.shadowBlur = 10 + 8 * blink;
+                    ctx.shadowColor = "#ff3300";
+                    // Cuerpo tipo rombo/púa, para distinguirlo de los cuadrados de lentos/rojos
+                    ctx.beginPath();
+                    ctx.moveTo(0, -b.size/2);
+                    ctx.lineTo(b.size/2, 0);
+                    ctx.lineTo(0, b.size/2);
+                    ctx.lineTo(-b.size/2, 0);
+                    ctx.closePath();
+                    ctx.fill();
+                    // Núcleo interior brillante
+                    ctx.fillStyle = `rgba(255,255,${180 + Math.round(50 * blink)},0.9)`;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, b.size/5, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.restore();
+                }
+            }
+            ctx.shadowBlur = 0;
+        }
+
+        function drawRedEnemies() {
+            for(let b of bulletEnemies) {
+                const alpha = b.fading ? Math.max(0, b.fadeTimer / RED_FADE_DURATION) : 1;
+                let positions = getWrappedScreenPositions(b.x, b.y, b.size + 10);
+                for(let p of positions) {
+                    ctx.globalAlpha = alpha;
+                    if(b.state === 'aiming') {
+                        let tp = worldToScreen(b.targetX, b.targetY);
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(tp.x, tp.y);
+                        ctx.strokeStyle = `rgba(255,0,0,${0.5+Math.sin(Date.now()*0.01)*0.3})`;
+                        ctx.lineWidth = 3;
+                        ctx.setLineDash([10,8]);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        ctx.fillStyle = "#ff6666";
+                    } else {
+                        ctx.fillStyle = "#ff3300";
+                        ctx.shadowBlur = 8;
+                        ctx.shadowColor = "red";
+                    }
+                    ctx.fillRect(p.x - b.size/2, p.y - b.size/2, b.size, b.size);
+                }
+            }
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+        }
+
+        // DIBUJADO
+        function draw() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            
+            let gradient = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+            gradient.addColorStop(0, "#05051a");
+            gradient.addColorStop(1, "#100a1f");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            
+            // Estrellas de fondo (dan la sensación de movimiento y dirección)
+            drawStars();
+
+            // Asteroides y enemigos (lentos + rojos) + items de vida
+            drawAsteroids();
+            drawAsteroidDebris();
+            drawSlowEnemies();
+            drawRedEnemies();
+            drawBerserkers();
+            drawHealthItems();
+            
+            // DASH LASER (destello de trayectoria) — convertido de mundo a pantalla cada frame
+            if(dashTrail.active) {
+                let s1 = worldToScreen(dashTrail.x1, dashTrail.y1);
+                let s2 = worldToScreen(dashTrail.x2, dashTrail.y2);
+                const drewSegmented = Cosmetics.drawSegmentedDashTrail(ctx, {x1:s1.x,y1:s1.y,x2:s2.x,y2:s2.y}, MODE_DASH_COLOR);
+                if(!drewSegmented) {
+                    ctx.beginPath();
+                    ctx.moveTo(s1.x, s1.y);
+                    ctx.lineTo(s2.x, s2.y);
+                    const intensity = 0.7 + Math.sin(Date.now() * 0.03) * 0.3;
+                    ctx.strokeStyle = `rgba(170, 80, 255, ${intensity})`;
+                    ctx.lineWidth = 8;
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = "#a64dff";
+                    ctx.stroke();
+                    // Línea interna más brillante
+                    ctx.beginPath();
+                    ctx.moveTo(s1.x, s1.y);
+                    ctx.lineTo(s2.x, s2.y);
+                    ctx.strokeStyle = `rgba(255, 255, 255, 0.9)`;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+            }
+            
+            // Jugador
+            let pPos = worldToScreen(player.x, player.y);
+            if(player.invincible > 0 && (Math.floor(Date.now()/50)%2 === 0)) {
+                ctx.fillStyle = "#ffffaa";
+            } else {
+                ctx.fillStyle = "#f0f0f0";
+            }
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "white";
+            ctx.fillRect(pPos.x - player.size/2, pPos.y - player.size/2, player.size, player.size);
+            ctx.fillStyle = "#a64dff";
+            ctx.fillRect(pPos.x - player.size/4, pPos.y - player.size/4, player.size/2, player.size/2);
+
+            // Mascotas y cosmético equipados
+            Cosmetics.drawMascots(ctx, pPos.x, pPos.y, player.size);
+            Cosmetics.drawCosmetic(ctx, pPos.x, pPos.y, player.size);
+            
+            // Dash cooldown
+            if(dashCooldown > 0) {
+                ctx.fillStyle = "rgba(170,80,255,0.6)";
+                ctx.fillRect(10, canvas.height-30, (DASH_COOLDOWN_MAX-dashCooldown)*5, 10);
+            }
+            
+            ctx.shadowBlur = 0;
+
+            // Anillos del golpe y aura de borde al dashear (skins)
+            Cosmetics.drawHitParticles(ctx);
+            Cosmetics.drawDashBorderGlow(ctx, canvas);
+            
+            // Game over
+            if(gameOver) {
+                ctx.font = "bold 48px monospace";
+                ctx.fillStyle = "red";
+                ctx.fillText("GAME OVER", canvas.width/2-140, canvas.height/2-40);
+                ctx.font = "20px monospace";
+                ctx.fillStyle = "white";
+                ctx.fillText("Presiona ESPACIO para reiniciar", canvas.width/2-165, canvas.height/2+30);
+            }
+        }
+        
+        // ACTUALIZACIÓN PRINCIPAL
+        function update() {
+            Cosmetics.updateEffects(canvas.width, canvas.height);
+            if(gameOver) return;
+            
+            if(player.invincible > 0) player.invincible--;
+            if(dashCooldown > 0) dashCooldown--;
+            
+            // Puntos por tiempo sobrevivido
+            timeScoreCounter++;
+            if(timeScoreCounter >= FRAMES_PER_SECOND) {
+                timeScoreCounter -= FRAMES_PER_SECOND;
+                addScore(TIME_SCORE_AMOUNT);
+            }
+            
+            // Tiempo de partida (HUD)
+            gameTimeFrames++;
+            document.getElementById('gameTime').innerText = formatGameTime(gameTimeFrames);
+            
+            updatePlayerMovement();
+            updateSpawnersSquasteroids();
+            updateAsteroids();
+            updateAsteroidDebris();
+            updateSlowEnemiesSquasteroids();
+            updateRedEnemies();
+            updateBerserkers();
+            updateHealthItems();
+            updateCamera();
+            updateDashTrail();
+            
+            updateDamageFlash();
+        }
+        
+        // ---------- INPUTS TÁCTILES (joystick + cruz de dash) ----------
+        let joystick = { active: false, touchId: null, baseX: 0, baseY: 0, dx: 0, dy: 0 };
+        const JOY_RADIUS = 40;
+
+        function updateJoystick(clientX, clientY, joystickKnob) {
+            let dx = clientX - joystick.baseX;
+            let dy = clientY - joystick.baseY;
+            let dist = Math.hypot(dx, dy);
+            if(dist > JOY_RADIUS) {
+                dx = dx / dist * JOY_RADIUS;
+                dy = dy / dist * JOY_RADIUS;
+            }
+            joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+            joystick.dx = dx / JOY_RADIUS;
+            joystick.dy = dy / JOY_RADIUS;
+        }
+
+        if(isMobile) {
+            const joystickZone = document.getElementById('joystickZone');
+            const joystickBase = document.getElementById('joystickBase');
+            const joystickKnob = document.getElementById('joystickKnob');
+
+            function resetJoystickKnob() {
+                joystick.active = false;
+                joystick.touchId = null;
+                joystick.dx = 0;
+                joystick.dy = 0;
+                joystickKnob.style.transform = 'translate(0px, 0px)';
+            }
+
+            joystickZone.addEventListener('touchstart', (e) => {
+                if(inMenu) return;
+                if(gameOver) { resetGame(); e.preventDefault(); return; }
+                const touch = e.changedTouches[0];
+                joystick.active = true;
+                joystick.touchId = touch.identifier;
+                const rect = joystickBase.getBoundingClientRect();
+                joystick.baseX = rect.left + rect.width/2;
+                joystick.baseY = rect.top + rect.height/2;
+                updateJoystick(touch.clientX, touch.clientY, joystickKnob);
+                e.preventDefault();
+            }, {passive:false});
+
+            joystickZone.addEventListener('touchmove', (e) => {
+                if(!joystick.active) return;
+                for(const touch of e.changedTouches) {
+                    if(touch.identifier === joystick.touchId) {
+                        updateJoystick(touch.clientX, touch.clientY, joystickKnob);
+                    }
+                }
+                e.preventDefault();
+            }, {passive:false});
+
+            const endJoystickTouch = (e) => {
+                for(const touch of e.changedTouches) {
+                    if(touch.identifier === joystick.touchId) {
+                        resetJoystickKnob();
+                    }
+                }
+                e.preventDefault();
+            };
+            joystickZone.addEventListener('touchend', endJoystickTouch, {passive:false});
+            joystickZone.addEventListener('touchcancel', endJoystickTouch, {passive:false});
+
+            // ---- Dash por deslizamiento (swipe) en el lado derecho de la pantalla ----
+            const swipeZone = document.getElementById('swipeZone');
+            const SWIPE_MIN_DIST = 45;
+            let swipe = { active: false, touchId: null, startX: 0, startY: 0 };
+
+            swipeZone.addEventListener('touchstart', (e) => {
+                if(inMenu) return;
+                if(gameOver) { resetGame(); e.preventDefault(); return; }
+                const touch = e.changedTouches[0];
+                swipe.active = true;
+                swipe.touchId = touch.identifier;
+                swipe.startX = touch.clientX;
+                swipe.startY = touch.clientY;
+                e.preventDefault();
+            }, {passive:false});
+
+            swipeZone.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+            }, {passive:false});
+
+            const finishSwipe = (e) => {
+                if(!swipe.active) return;
+                for(const touch of e.changedTouches) {
+                    if(touch.identifier !== swipe.touchId) continue;
+                    if(!inMenu) {
+                        const dx = touch.clientX - swipe.startX;
+                        const dy = touch.clientY - swipe.startY;
+                        const dist = Math.hypot(dx, dy);
+                        if(dist >= SWIPE_MIN_DIST) {
+                            initMusic();
+                            let dirX = 0, dirY = 0;
+                            if(Math.abs(dx) > Math.abs(dy)) {
+                                dirX = dx > 0 ? 1 : -1;
+                            } else {
+                                dirY = dy > 0 ? 1 : -1;
+                            }
+                            performDash(dirX, dirY);
+                        }
+                    }
+                    swipe.active = false;
+                    swipe.touchId = null;
+                }
+                e.preventDefault();
+            };
+            swipeZone.addEventListener('touchend', finishSwipe, {passive:false});
+            swipeZone.addEventListener('touchcancel', () => {
+                swipe.active = false;
+                swipe.touchId = null;
+            }, {passive:false});
+        }
+
+        // INPUTS
+        window.addEventListener('keydown', (e) => {
+            if(inMenu) return;
+            let key = e.key;
+            
+            if(key === 'w') move.up = true;
+            if(key === 's') move.down = true;
+            if(key === 'a') move.left = true;
+            if(key === 'd') move.right = true;
+            
+            let dashX = 0, dashY = 0;
+            if(key === 'ArrowUp') dashY = -1;
+            if(key === 'ArrowDown') dashY = 1;
+            if(key === 'ArrowLeft') dashX = -1;
+            if(key === 'ArrowRight') dashX = 1;
+            if((dashX !== 0 || dashY !== 0)) {
+                performDash(dashX, dashY);
+                e.preventDefault();
+            }
+            if(key.startsWith('Arrow')) e.preventDefault();
+            
+            if(key === ' ' || key === 'Spacebar') {
+                e.preventDefault();
+                if(gameOver) {
+                    resetGame();
+                } else {
+                    initMusic();
+                }
+            }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            if(e.key === 'w') move.up = false;
+            if(e.key === 's') move.down = false;
+            if(e.key === 'a') move.left = false;
+            if(e.key === 'd') move.right = false;
+        });
+        
+        canvas.addEventListener('click', () => {
+            if(gameOver) {
+                resetGame();
+            } else {
+                initMusic();
+            }
+        });
+        
+        canvas.addEventListener('click', () => {
+            initMusic();
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) {}
+        });
+        
+        // LOOP (limitado a 60 FPS)
+        const TARGET_FPS = 60;
+        const FRAME_DURATION = 1000 / TARGET_FPS;
+        let lastFrameTime = 0;
+
+        function gameLoop(timestamp) {
+            requestAnimationFrame(gameLoop);
+
+            if(!lastFrameTime) lastFrameTime = timestamp;
+            const elapsed = timestamp - lastFrameTime;
+            if(elapsed < FRAME_DURATION) return;
+            lastFrameTime = timestamp - (elapsed % FRAME_DURATION);
+
+            if(!inMenu) {
+                update();
+                draw();
+            }
+        }
+        
+        showGameScreen();
+        resetGame();
+        requestAnimationFrame(gameLoop);
+    })();
+</script>
+</body>
+</html>

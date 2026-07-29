@@ -1,0 +1,3591 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>BulletDasher - Practice Mode</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: monospace;
+            transition: background-color 0.05s ease;
+        }
+        
+        body.damage-flash {
+            background-color: #ff0000 !important;
+        }
+        
+        canvas {
+            border: 2px solid white;
+            box-shadow: 0 0 20px rgba(0,255,255,0.3);
+            cursor: none;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: lime;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            z-index: 10;
+            pointer-events: none;
+            font-size: 14px;
+        }
+        
+        .controls-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            font-size: 12px;
+            padding: 5px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .restart-hint {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            color: gray;
+            background: rgba(0,0,0,0.5);
+            font-size: 11px;
+            padding: 5px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .mobile-hidden { display: none !important; }
+
+        #musicToggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 70;
+            border: 1px solid white;
+            cursor: pointer;
+        }
+
+        #musicToggle:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        #fullscreenBtn {
+            position: absolute;
+            top: 10px;
+            right: 150px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 70;
+            border: 1px solid white;
+            cursor: pointer;
+        }
+
+        #fullscreenBtn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        #fullscreenBtn.hidden { display: none !important; }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .neon-btn {
+            position: relative;
+            background: rgba(255,0,0,0.08);
+            color: #ff4444;
+            border: 2px solid #ff0000;
+            padding: 16px 55px;
+            font-size: 22px;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 3px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,0,0,0.6), inset 0 0 10px rgba(255,0,0,0.25);
+            text-shadow: 0 0 8px #ff0000;
+            transition: all 0.2s ease;
+        }
+
+        .neon-btn:hover {
+            background: rgba(255,0,0,0.22);
+            box-shadow: 0 0 22px rgba(255,0,0,0.9), inset 0 0 15px rgba(255,0,0,0.4);
+            transform: scale(1.05);
+            color: #ffaaaa;
+        }
+
+        #menuBtn {
+            position: absolute;
+            bottom: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 70;
+            padding: 10px 28px;
+            font-size: 13px;
+            color: #fff44d;
+            border-color: #ffee00;
+            background: rgba(255,238,0,0.08);
+            box-shadow: 0 0 10px rgba(255,238,0,0.6), inset 0 0 10px rgba(255,238,0,0.25);
+            text-shadow: 0 0 8px #ffee00;
+        }
+
+        #menuBtn:hover {
+            transform: translateX(-50%) scale(1.05);
+            background: rgba(255,238,0,0.22);
+            box-shadow: 0 0 22px rgba(255,238,0,0.9), inset 0 0 15px rgba(255,238,0,0.4);
+            color: #fff9b3;
+        }
+
+        /* ---------- CONTROLES MÓVILES ---------- */
+        #mobileControls {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            pointer-events: none;
+        }
+
+        #mobileControls.hidden { display: none !important; }
+
+        #joystickZone {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            width: 130px;
+            height: 130px;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        #joystickBase {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.07);
+            border: 2px solid rgba(0,255,255,0.55);
+            box-shadow: 0 0 15px rgba(0,255,255,0.3), inset 0 0 15px rgba(0,255,255,0.15);
+        }
+
+        #joystickKnob {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 54px;
+            height: 54px;
+            margin-left: -27px;
+            margin-top: -27px;
+            border-radius: 50%;
+            background: rgba(0,255,255,0.55);
+            box-shadow: 0 0 12px rgba(0,255,255,0.9);
+        }
+
+        #swipeZone {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        /* Zona central para pausar/despausar con un toque (reemplaza a la barra
+           espaciadora, que no existe en celular). Va después de swipeZone en el
+           DOM para quedar por encima suyo y "robarle" los toques justo en el centro. */
+        #pauseZone {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 160px;
+            height: 160px;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        /* ---------- PANEL DE PRÁCTICA ---------- */
+        .practice-square {
+            width: 84px;
+            height: 84px;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(0,255,255,0.5);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 0 8px rgba(0,255,255,0.35), inset 0 0 8px rgba(0,255,255,0.15);
+            transition: box-shadow 0.15s ease, background 0.15s ease, transform 0.15s ease;
+            font-family: monospace;
+            padding: 4px;
+        }
+
+        .practice-square:hover, .practice-square:focus-visible {
+            background: rgba(0,255,255,0.15);
+            box-shadow: 0 0 20px rgba(0,255,255,0.9), inset 0 0 12px rgba(0,255,255,0.3);
+            transform: scale(1.06);
+        }
+
+        .practice-square:active {
+            transform: scale(0.97);
+        }
+
+        #spawnPanel {
+            position: fixed;
+            left: 22px;
+            top: 42%;
+            transform: translateY(-50%);
+            z-index: 55;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .spawn-row {
+            display: flex;
+            flex-direction: row;
+            gap: 6px;
+        }
+
+        #spawnBtn {
+            width: 96px;
+            height: 96px;
+        }
+
+        .spawn-side-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            justify-content: space-between;
+        }
+
+        .spawn-side-controls .practice-square.small-square {
+            width: 45px;
+            height: 45px;
+            font-size: 16px;
+            background: #163c42;
+        }
+
+        .spawn-side-controls .practice-square.small-square:hover,
+        .spawn-side-controls .practice-square.small-square:focus-visible {
+            background: #1f5158;
+        }
+
+        /* ---------- PANEL DE CORRER LISTA (lado derecho, solo con level creator activo) ---------- */
+        #runPanel {
+            position: fixed;
+            right: 22px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 65;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #runListBtn {
+            width: 70px;
+            height: 96px;
+            color: #7dff7d;
+            border-color: #33ff33;
+            box-shadow: 0 0 8px rgba(51,255,51,0.35), inset 0 0 8px rgba(51,255,51,0.15);
+            text-shadow: 0 0 6px #33ff33;
+            font-size: 26px;
+        }
+        #runListBtn:hover {
+            background: rgba(51,255,51,0.15);
+            box-shadow: 0 0 20px rgba(51,255,51,0.9), inset 0 0 12px rgba(51,255,51,0.3);
+        }
+
+        #spawnBtn .sprite-icon {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #spawnBtn .sprite-name {
+            margin-top: 4px;
+            font-size: 10px;
+            color: #aaffff;
+            letter-spacing: 1px;
+            text-shadow: 0 0 4px cyan;
+            white-space: nowrap;
+        }
+
+        /* En celular, estos paneles solo se muestran en orientación horizontal */
+        @media (orientation: portrait) and (pointer: coarse) {
+            #spawnPanel, #runPanel {
+                display: none !important;
+            }
+        }
+
+        /* ---------- SWITCH DEL LEVEL CREATOR ---------- */
+        .lc-switch {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 24px;
+            cursor: pointer;
+        }
+
+        .lc-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .lc-slider {
+            position: absolute;
+            inset: 0;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(0,255,255,0.5);
+            border-radius: 24px;
+            box-shadow: 0 0 8px rgba(0,255,255,0.35), inset 0 0 8px rgba(0,255,255,0.15);
+            transition: background 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .lc-slider::before {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            left: 2px;
+            top: 2px;
+            border-radius: 50%;
+            background: rgba(0,255,255,0.55);
+            box-shadow: 0 0 8px rgba(0,255,255,0.9);
+            transition: transform 0.15s ease;
+        }
+
+        .lc-switch input:checked + .lc-slider {
+            background: rgba(0,255,255,0.15);
+            box-shadow: 0 0 16px rgba(0,255,255,0.8), inset 0 0 10px rgba(0,255,255,0.3);
+        }
+
+        .lc-switch input:checked + .lc-slider::before {
+            transform: translateX(22px);
+        }
+
+        /* Variante verde: mismo switch, paleta a juego con runListBtn (▶) */
+        .lc-switch-green .lc-slider {
+            border-color: #33ff33;
+            box-shadow: 0 0 8px rgba(51,255,51,0.35), inset 0 0 8px rgba(51,255,51,0.15);
+        }
+
+        .lc-switch-green .lc-slider::before {
+            background: rgba(51,255,51,0.55);
+            box-shadow: 0 0 8px rgba(51,255,51,0.9);
+        }
+
+        .lc-switch-green input:checked + .lc-slider {
+            background: rgba(51,255,51,0.15);
+            box-shadow: 0 0 16px rgba(51,255,51,0.8), inset 0 0 10px rgba(51,255,51,0.3);
+        }
+
+        /* ---------- CAJITA DEL LEVEL CREATOR ---------- */
+        #levelCreatorBox {
+            width: 148px;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(0,255,255,0.5);
+            border-radius: 8px;
+            box-shadow: 0 0 8px rgba(0,255,255,0.35), inset 0 0 8px rgba(0,255,255,0.15);
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .lc-toolbar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+        }
+
+        .lc-tool-btn {
+            background: #163c42;
+            color: #aaffff;
+            border: 1px solid rgba(0,255,255,0.5);
+            border-radius: 5px;
+            font-size: 14px;
+            padding: 6px 0;
+            cursor: pointer;
+            transition: background 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .lc-tool-btn:hover {
+            background: #1f5158;
+            box-shadow: 0 0 10px rgba(0,255,255,0.6);
+        }
+
+        .lc-export-btn {
+            width: 100%;
+            background: #163c42;
+            color: #aaffff;
+            border: 1px solid rgba(0,255,255,0.5);
+            border-radius: 5px;
+            font-size: 14px;
+            padding: 6px 0;
+            cursor: pointer;
+            transition: background 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .lc-export-btn:hover {
+            background: #1f5158;
+            box-shadow: 0 0 10px rgba(0,255,255,0.6);
+        }
+
+        .lc-guide-btn {
+            width: 100%;
+            display: block;
+            box-sizing: border-box;
+            background: #163c42;
+            color: #fff9c4;
+            border: 1px solid rgba(255,238,0,0.5);
+            border-radius: 5px;
+            font-size: 13px;
+            font-family: monospace;
+            font-weight: bold;
+            text-align: center;
+            text-decoration: none;
+            padding: 6px 0;
+            cursor: pointer;
+            transition: background 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .lc-guide-btn:hover {
+            background: #4a4212;
+            box-shadow: 0 0 10px rgba(255,238,0,0.6);
+        }
+
+        .lc-toolbar-bottom {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px;
+        }
+
+        .lc-list {
+            max-height: 260px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .lc-block {
+            background: #163338;
+            border: 1px solid rgba(0,255,255,0.3);
+            border-radius: 4px;
+            padding: 4px 6px;
+            font-size: 10px;
+            color: #d8fff9;
+            word-break: break-all;
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .lc-block:hover {
+            background: #1e454c;
+        }
+
+        .lc-param-input {
+            width: 100%;
+            background: #0d0d0d;
+            color: #fff44d;
+            border: 1px solid #ffee00;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 10px;
+            padding: 2px 4px;
+        }
+
+        @keyframes lcFlashRed {
+            0%, 100% { background: #163338; border-color: rgba(0,255,255,0.3); }
+            50% { background: #661a1a; border-color: #ff0000; }
+        }
+
+        .lc-block.lc-flash {
+            animation: lcFlashRed 0.4s ease;
+        }
+
+        /* ---------- VARA DE INSERCIÓN (dónde cae el próximo bloque) ---------- */
+        .lc-cursor {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 1px 0;
+        }
+
+        .lc-cursor-line {
+            flex: 1;
+            height: 3px;
+            background: #ff44ff;
+            border-radius: 2px;
+            box-shadow: 0 0 8px #ff44ff, 0 0 14px rgba(255,68,255,0.7);
+            animation: lcCursorPulse 1.1s ease-in-out infinite;
+        }
+
+        @keyframes lcCursorPulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        .lc-cursor-arrow {
+            background: #3a1c3a;
+            color: #ff9dff;
+            border: 1px solid #ff44ff;
+            border-radius: 4px;
+            font-size: 9px;
+            line-height: 1;
+            padding: 3px 4px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+
+        .lc-cursor-arrow:hover:not(:disabled) {
+            background: #55285a;
+            box-shadow: 0 0 8px rgba(255,68,255,0.7);
+        }
+
+        .lc-cursor-arrow:disabled {
+            opacity: 0.25;
+            cursor: default;
+        }
+    </style>
+<script src="cosmetics.js"></script>
+<script src="achievements.js"></script>
+</head>
+<body>
+<div id="ui" class="hidden">
+    ❤️ VIDA: <span id="hp">3</span> | 🎯 SCORE: <span id="score">0</span><br>
+    ⏱️ Tiempo: <span id="gameTime">0:00</span> | ☠️ Extinciones: <span id="extinctionCount">0</span>
+</div>
+<div class="controls-info hidden">
+    🎮 WASD = mover | ⚡ FLECHAS = dash (atraviesa y mata enemigos, deja vida) | 📱 Joystick + desliza a la derecha para dash
+</div>
+<div class="restart-hint hidden">
+    💀 GAME OVER → Presiona ESPACIO para reiniciar
+</div>
+<button id="musicToggle" class="hidden">🎵 Música: ON</button>
+<button id="fullscreenBtn" class="hidden">⛶ Pantalla completa</button>
+<button id="menuBtn" class="neon-btn hidden">🏠 Menú Principal</button>
+<canvas id="gameCanvas" width="1100" height="750" class="hidden"></canvas>
+
+<div id="spawnPanel" class="hidden">
+    <div class="spawn-row">
+        <button id="spawnBtn" class="practice-square" title="Invocar enemigo seleccionado">
+            <span class="sprite-icon" id="spawnSpriteIcon"></span>
+            <span class="sprite-name" id="spawnSpriteName">PURP</span>
+        </button>
+        <div class="spawn-side-controls">
+            <button id="selectUpBtn" class="practice-square small-square" title="Enemigo anterior">▲</button>
+            <button id="selectDownBtn" class="practice-square small-square" title="Siguiente enemigo">▼</button>
+        </div>
+    </div>
+    <label class="lc-switch" title="Activar creador de niveles">
+        <input type="checkbox" id="levelCreatorActivate">
+        <span class="lc-slider"></span>
+    </label>
+    <div id="levelCreatorBox" class="hidden">
+        <div class="lc-toolbar">
+            <button id="lcClearBtn" class="lc-tool-btn" title="Borrar toda la lista">🗑️</button>
+            <button id="lcWaitBtn" class="lc-tool-btn" title="Añadir espera de 1 segundo">⏰</button>
+            <button id="lcUndoBtn" class="lc-tool-btn" title="Quitar último bloque">❌</button>
+            <button id="lcLoadBtn" class="lc-tool-btn" title="Cargar archivo .bldh">📋</button>
+        </div>
+        <button id="lcExportBtn" class="lc-export-btn" title="Descargar lista como .bldh">📎</button>
+        <input type="file" id="lcFileInput" accept=".bldh,.txt" class="hidden">
+        <div id="lcList" class="lc-list"></div>
+        <div class="lc-toolbar-bottom">
+            <button id="lcRepeatBtn" class="lc-tool-btn" title="Añadir bloque Repetir">🔁</button>
+            <button id="lcComplexBtn" class="lc-tool-btn" title="Añadir bloque Complejo (reservado para el futuro)">🔥</button>
+        </div>
+        <a id="lcGuideBtn" class="lc-guide-btn" href="guia_bldh.pdf" target="_blank" rel="noopener" title="Abrir la guía del lenguaje .bldh">📖 Guía</a>
+    </div>
+</div>
+
+<div id="runPanel" class="hidden">
+    <button id="runListBtn" class="practice-square" title="Correr lista">▶</button>
+    <label class="lc-switch lc-switch-green" title="Auto-correr el .bldh al revivir">
+        <input type="checkbox" id="autoReplayOnReviveActivate">
+        <span class="lc-slider"></span>
+    </label>
+</div>
+
+<div id="mobileControls" class="hidden">
+    <div id="joystickZone">
+        <div id="joystickBase">
+            <div id="joystickKnob"></div>
+        </div>
+    </div>
+    <div id="swipeZone"></div>
+    <div id="pauseZone"></div>
+</div>
+
+<script>
+    (function(){
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const bodyElement = document.body;
+
+        // ---------- CONTROL DE PANTALLA DE JUEGO ----------
+        const menuBtn = document.getElementById('menuBtn');
+        const gameScreenElements = [
+            document.getElementById('ui'),
+            document.querySelector('.controls-info'),
+            document.querySelector('.restart-hint'),
+            document.getElementById('musicToggle'),
+            document.getElementById('spawnPanel'),
+            canvas
+        ];
+
+        // En ClassicMode.html el juego arranca directo, sin overlay de menú
+        let inMenu = false;
+
+        // ---------- DETECCIÓN DE MÓVIL Y CONTROLES TÁCTILES ----------
+        const isMobile = (('ontouchstart' in window) || navigator.maxTouchPoints > 0)
+            && window.matchMedia('(pointer: coarse)').matches;
+
+        const mobileControls = document.getElementById('mobileControls');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+        if(isMobile) {
+            // En celu este texto estorba y no aplica (no hay teclado) - se oculta siempre
+            document.querySelector('.controls-info').classList.add('mobile-hidden');
+            document.querySelector('.restart-hint').classList.add('mobile-hidden');
+        }
+
+        // ---------- ESCALAR CANVAS EN CELU (sin estirar, centrado) ----------
+        // En horizontal se reserva espacio a los lados para los paneles de práctica (~130px c/u)
+        const PRACTICE_PANEL_RESERVED = 165;
+        function resizeCanvasForMobile() {
+            if(!isMobile) return;
+            const isLandscape = window.matchMedia('(orientation: landscape)').matches;
+            const reserved = isLandscape ? PRACTICE_PANEL_RESERVED * 2 : 0;
+            const availW = window.innerWidth - reserved;
+            const availH = window.innerHeight;
+            const scale = Math.min(availW / canvas.width, availH / canvas.height);
+            canvas.style.width = (canvas.width * scale) + 'px';
+            canvas.style.height = (canvas.height * scale) + 'px';
+        }
+
+        if(isMobile) {
+            fullscreenBtn.classList.remove('hidden');
+            resizeCanvasForMobile();
+            window.addEventListener('resize', resizeCanvasForMobile);
+            window.addEventListener('orientationchange', resizeCanvasForMobile);
+        }
+
+        function toggleFullscreen() {
+            const el = document.documentElement;
+            if(!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if(el.requestFullscreen) el.requestFullscreen().catch(() => {});
+                else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            } else {
+                if(document.exitFullscreen) document.exitFullscreen();
+                else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+        }
+
+        function updateFullscreenBtnUI() {
+            const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            fullscreenBtn.textContent = isFs ? "✕ Salir pantalla completa" : "⛶ Pantalla completa";
+        }
+
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+        document.addEventListener('fullscreenchange', () => { updateFullscreenBtnUI(); resizeCanvasForMobile(); });
+        document.addEventListener('webkitfullscreenchange', () => { updateFullscreenBtnUI(); resizeCanvasForMobile(); });
+
+        function showGameScreen() {
+            inMenu = false;
+            gameScreenElements.forEach(el => el.classList.remove('hidden'));
+            if(isMobile) mobileControls.classList.remove('hidden');
+        }
+
+        function goToMainMenu() {
+            stopMusic();
+            window.location.href = 'index.html';
+        }
+
+        menuBtn.addEventListener('click', goToMainMenu);
+        
+        // ---------- AUDIO ----------
+        let backgroundMusic = null;
+        let musicInitialized = false;
+        
+        function initMusic() {
+            if (musicInitialized) return;
+            try {
+                backgroundMusic = new Audio('musicapractice.mp3');
+                backgroundMusic.loop = true;
+                backgroundMusic.volume = 0.7;
+                if (!musicMuted) {
+                    backgroundMusic.play().catch(e => console.log("Esperando interacción para reproducir música"));
+                }
+                musicInitialized = true;
+            } catch(e) { console.log("No se pudo cargar musicapractice.mp3", e); }
+        }
+        
+        function restartMusic() {
+            if (backgroundMusic) {
+                backgroundMusic.pause();
+                backgroundMusic.currentTime = 0;
+                if (!musicMuted) {
+                    backgroundMusic.play().catch(e => console.log("No se pudo reproducir música", e));
+                }
+            } else {
+                initMusic();
+            }
+        }
+        
+        function stopMusic() {
+            if (backgroundMusic) {
+                backgroundMusic.pause();
+            }
+        }
+        
+        // ---------- MUTE SOLO MÚSICA (no afecta efectos de sonido) ----------
+        let musicMuted = false;
+        const musicToggleBtn = document.getElementById('musicToggle');
+        
+        function updateMusicToggleUI() {
+            musicToggleBtn.textContent = musicMuted ? "🔇 Música: OFF" : "🎵 Música: ON";
+        }
+        
+        function toggleMusic() {
+            musicMuted = !musicMuted;
+            if (backgroundMusic) {
+                if (musicMuted) {
+                    backgroundMusic.pause();
+                } else if (!gameOver) {
+                    backgroundMusic.play().catch(e => {});
+                }
+            }
+            updateMusicToggleUI();
+        }
+        
+        musicToggleBtn.addEventListener('click', toggleMusic);
+
+        // ---------- PAUSA (ESPACIO en pleno juego) ----------
+        // Mientras está pausado, el panel de invocación sigue siendo usable: cada invocación
+        // se guarda en cola y se dispara toda de golpe apenas se despausa.
+        function togglePause() {
+            if(gameOver) return;
+            paused = !paused;
+            if(paused) {
+                if(backgroundMusic) backgroundMusic.pause();
+                menuBtn.classList.remove('hidden');
+            } else {
+                if(backgroundMusic && !musicMuted) backgroundMusic.play().catch(() => {});
+                for(const enemy of pendingSpawns) enemy.spawn();
+                pendingSpawns = [];
+                menuBtn.classList.add('hidden');
+            }
+        }
+        
+        function playDamageSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = 220;
+                gainNode.gain.value = 0.3;
+                
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+                oscillator.stop(audioCtx.currentTime + 0.3);
+                
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) { console.log("Audio no soportado"); }
+        }
+        
+        function playHealSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = 523.25; // Do agudo
+                gainNode.gain.value = 0.2;
+                
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2);
+                oscillator.stop(audioCtx.currentTime + 0.2);
+                
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) { console.log("Audio no soportado"); }
+        }
+
+        // Sonido de impacto del berserker al perder una vida: mucho más grave y fuerte
+        // que el daño clásico (frecuencia baja que cae aún más, con más volumen). Igual que en Squasteroids.
+        function playBerserkerHitSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.value = 85; // grave
+                gainNode.gain.value = 0.55; // más fuerte que el daño clásico (0.3)
+
+                oscillator.start();
+                oscillator.frequency.exponentialRampToValueAtTime(38, audioCtx.currentTime + 0.35);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.4);
+                oscillator.stop(audioCtx.currentTime + 0.4);
+
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) { console.log("Audio no soportado"); }
+        }
+        
+        // DESTELLO ROJO
+        let damageFlashTimer = 0;
+        function triggerDamageFlash() {
+            bodyElement.classList.add('damage-flash');
+            damageFlashTimer = 6;
+            playDamageSound();
+        }
+        
+        function updateDamageFlash() {
+            if (damageFlashTimer > 0) {
+                damageFlashTimer--;
+                if (damageFlashTimer <= 0) {
+                    bodyElement.classList.remove('damage-flash');
+                }
+            }
+        }
+        
+        // ---------- DASH LASER ----------
+        let dashTrail = { active: false, x1: 0, y1: 0, x2: 0, y2: 0, timer: 0 };
+        const PRACTICE_DASH_COLOR = '#a0a0a0'; // color neón del dash en este modo (gris) — usado por los cosméticos
+        const DASH_TRAIL_DURATION = 8; // frames que dura el laser visible
+        
+        // Items de curación (cuadritos verdes)
+        let healthItems = []; // { x, y, size, timer }
+        const HEALTH_ITEM_DURATION = 180; // 3 segundos a 60fps
+        const HEALTH_ITEM_SIZE = 10;
+
+        // ---------- CONFETI (Complejo.Confeti) ----------
+        let confettiParticles = []; // { x, y, vx, vy, size, color, rotation, rotSpeed, life }
+        const CONFETTI_COLORS = ['#ff4d4d', '#ffee00', '#33ff33', '#00e5ff', '#ff66ff', '#ffa500'];
+        const CONFETTI_COUNT = 60;
+        const CONFETTI_LIFE = 110; // ~1.8s a 60fps
+
+        function triggerConfetti() {
+            for(let i=0; i<CONFETTI_COUNT; i++) {
+                const fromLeft = Math.random() < 0.5;
+                const speed = randRange(3, 7);
+                confettiParticles.push({
+                    x: fromLeft ? -10 : canvas.width + 10,
+                    y: Math.random() * canvas.height,
+                    vx: (fromLeft ? 1 : -1) * speed,
+                    vy: randRange(-3, 3),
+                    size: randRange(4, 9),
+                    color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+                    rotation: Math.random() * Math.PI * 2,
+                    rotSpeed: randRange(-0.3, 0.3),
+                    life: CONFETTI_LIFE
+                });
+            }
+        }
+
+        function updateConfetti() {
+            for(let i = confettiParticles.length - 1; i >= 0; i--) {
+                const p = confettiParticles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.05; // gravedad leve
+                p.rotation += p.rotSpeed;
+                p.life--;
+                if(p.life <= 0) confettiParticles.splice(i, 1);
+            }
+        }
+
+        function drawConfetti() {
+            for(const p of confettiParticles) {
+                ctx.save();
+                ctx.translate(p.x, p.y);
+                ctx.rotate(p.rotation);
+                ctx.globalAlpha = Math.min(1, p.life / 25);
+                ctx.fillStyle = p.color;
+                ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                ctx.restore();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // ---------- TEXTO EN PANTALLA (Complejo.Texto("texto")por(segundos)) ----------
+        let canvasTextOverlay = null; // { text, timer }
+
+        function showCanvasText(text, seconds) {
+            canvasTextOverlay = { text: text, timer: Math.max(1, Math.round(seconds * FRAMES_PER_SECOND)) };
+        }
+
+        function updateCanvasTextOverlay() {
+            if(!canvasTextOverlay) return;
+            canvasTextOverlay.timer--;
+            if(canvasTextOverlay.timer <= 0) canvasTextOverlay = null;
+        }
+
+        // Corta el texto en líneas que no se salgan del ancho disponible, respetando palabras
+        // enteras (nada de cortar una palabra a la mitad). ctx.font debe estar seteado antes
+        // de llamar a esta función, porque usa measureText con la tipografía activa.
+        function wrapCanvasText(text, maxWidth) {
+            const words = text.split(' ');
+            const lines = [];
+            let current = '';
+            for(const word of words) {
+                const test = current ? current + ' ' + word : word;
+                if(current && ctx.measureText(test).width > maxWidth) {
+                    lines.push(current);
+                    current = word;
+                } else {
+                    current = test;
+                }
+            }
+            if(current) lines.push(current);
+            return lines;
+        }
+
+        function drawCanvasTextOverlay() {
+            if(!canvasTextOverlay) return;
+            // El tamaño de letra se adapta al ancho del canvas, no es un valor fijo.
+            const fontSize = Math.round(canvas.width * 0.065);
+            ctx.save();
+            ctx.font = `bold ${fontSize}px monospace`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#00ffee';
+            ctx.shadowColor = '#00ffee';
+            ctx.shadowBlur = 14;
+            const maxWidth = canvas.width * 0.85;
+            const lines = wrapCanvasText(canvasTextOverlay.text, maxWidth);
+            const lineHeight = fontSize * 1.15;
+            const totalHeight = lines.length * lineHeight;
+            let y = canvas.height/2 - totalHeight/2 + lineHeight/2;
+            for(const line of lines) {
+                ctx.fillText(line, canvas.width/2, y);
+                y += lineHeight;
+            }
+            ctx.restore();
+        }
+
+        // ---------- CAMBIO DE MÚSICA (Complejo.MusicHTMLFunc(archivo.mp3)) ----------
+        // Busca el archivo de forma referencial en la misma carpeta del HTML (como <audio src>
+        // normal), igual que la música original ('musicapractice.mp3'). Corta la que esté
+        // sonando y arranca la nueva.
+        function changeBackgroundMusic(filename) {
+            if(backgroundMusic) backgroundMusic.pause();
+            backgroundMusic = new Audio(filename);
+            backgroundMusic.loop = true;
+            backgroundMusic.volume = 0.7;
+            if(!musicMuted && !gameOver && !paused) {
+                backgroundMusic.play().catch(e => console.log("No se pudo reproducir música", e));
+            }
+        }
+        
+        // ---------- PARÁMETROS ----------
+        let hp = 3;
+        let score = 0;
+        let gameOver = false;
+        let paused = false; // ESPACIO en pleno juego pausa/despausa (no confundir con gameOver)
+        let pendingSpawns = []; // invocaciones hechas mientras está pausado: se disparan de golpe al despausar
+        let timeScoreCounter = 0; // frames acumulados para el puntaje por tiempo
+        const FRAMES_PER_SECOND = 60;
+        const TIME_SCORE_AMOUNT = 5; // puntos que suma cada segundo sobrevivido
+        let gameTimeFrames = 0; // frames transcurridos de partida (para el HUD de tiempo)
+        
+        function formatGameTime(frames) {
+            const totalSeconds = Math.floor(frames / FRAMES_PER_SECOND);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+        }
+        
+        // Jugador
+        let player = { x: canvas.width/2, y: canvas.height/2, size: 18, invincible: 0, pushVx: 0, pushVy: 0 };
+        let move = { up: false, down: false, left: false, right: false };
+        let dashCooldown = 0;
+        const DASH_SHORT = 80;
+        const DASH_COOLDOWN_MAX = 15;
+        
+        // EVENTO SOMBRA GLOBAL (Extcn — zona segura circular, del Classic)
+        let shadowEvent = { active: false, safeZone: { x: 0, y: 0, radius: 100 }, timer: 0, phase: 0 };
+        let extinctionCount = 0; // veces que ha terminado el evento sombra (Extinciones)
+
+        // EVENTO DE EXTINCIÓN EN BANDA (Banex — banda vertical, del Metro)
+        let extinctionEvent = { active: false, x: 0, vx: 0, bandWidth: 190, timer: 0, phase: 0 };
+        const EXTINCTION_SPEED = 3.3;
+
+        // LASERS MÓVILES (Lamov — del Metro, solo horizontales)
+        let movingLasers = []; // { x, fromLeft, charge, speed, colorIdx }
+        const MOVING_LASER_WARMUP = 45;
+        const MOVING_LASER_HIT_HALFWIDTH = 4;
+
+        // REBOTONES (Pepes — del Metro, aquí sin puertas: rebotan y se van solos tras un tiempo secreto)
+        let bouncers = []; // { x, y, size, vx, vy, life, leaving }
+        const BOUNCER_SIZE = 14 * 1.4;
+        const BOUNCER_SPEED = 5.3;
+        const BOUNCER_LEAVE_SPEED = 3.2;
+        const BOUNCER_LIFE_MIN = 420; // 7s a 60fps
+        const BOUNCER_LIFE_MAX = 720; // 12s a 60fps
+
+        // ASTEROIDE (Rock — del Squasteroids). Acá el canvas tiene bordes (no es un mundo
+        // toroidal como en Squasteroids), así que el asteroide rebota contra las paredes en
+        // vez de envolver el mundo. Mismas propiedades que un asteroide normal: 3 tiers,
+        // se despedaza igual, etc.
+        let asteroids = []; // { x, y, radius, tier(1|2|3), points, rotation, rotSpeed, vx, vy }
+        let asteroidDebris = []; // { x, y, vx, vy, p1x, p1y, p2x, p2y, rotation, rotSpeed, life, maxLife }
+        const ASTEROID_TIER1_RADIUS_MIN = 95;
+        const ASTEROID_TIER1_RADIUS_MAX = 130;
+        const ASTEROID_TIER2_RADIUS_MIN = 42;
+        const ASTEROID_TIER2_RADIUS_MAX = 58;
+        const ASTEROID_TIER3_RADIUS_MIN = 16;
+        const ASTEROID_TIER3_RADIUS_MAX = 26;
+        const ROCK_SPAWN_DIST_MIN = 300; // algo lejos del jugador, pero dentro del canvas
+        const ROCK_SPAWN_DIST_MAX = 450;
+        const ROCK_SPEED_MIN = 0.6; // ya aparece en movimiento (puede chocar con los bordes)
+        const ROCK_SPEED_MAX = 1.3;
+        const DEBRIS_LIFE = 45; // ~0.75s de desvanecimiento
+
+        // BERSERKER (Brskr — del Squasteroids). Se materializa con la misma animación épica
+        // gradual, luego persigue al jugador acelerando constantemente y rebota contra los
+        // bordes del canvas (si se le dejara salir de pantalla, la aceleración constante lo
+        // hacía orbitar varias vueltas al jugador antes de conectar el golpe).
+        let berserkers = []; // { x, y, size, vx, vy, hp, rotation, blinkTimer, spawnTimer, spawnParticles }
+        const BERSERKER_SIZE = 14 * 1.4 * 2;
+        const BERSERKER_MAX_HP = 3;
+        const BERSERKER_MAX_SPEED = 16 * 1.3; // 1.3 veces la velocidad de disparo de los rojos
+        const BERSERKER_ACCEL = 0.62;
+        const BERSERKER_SPAWN_DIST_MIN = 300;
+        const BERSERKER_SPAWN_DIST_MAX = 450;
+        const BERSERKER_MATERIALIZE_DURATION = 75; // aparición gradual y épica
+        const BERSERKER_SPAWN_PARTICLES_MIN = 16;
+        const BERSERKER_SPAWN_PARTICLES_MAX = 24;
+        const BERSERKER_SPAWN_RADIUS = 170;
+        const BERSERKER_DASH_BRAKE = 0.15;
+        const BERSERKER_DASH_KNOCKBACK = 22;
+        const BERSERKER_RED_BRAKE = 0.8;
+        const BERSERKER_BOUNCE_FACTOR = 0.55;
+        const BERSERKER_PLAYER_PUSH = 14;
+        const BERSERKER_PUSH_FRICTION = 0.90;
+        
+        // Listas de enemigos
+        let slowEnemies = [];
+        let bulletEnemies = [];
+        let lasers = [];
+        
+        // Temporizadores
+        let slowSpawnTimer = 0;
+        let bulletSpawnTimer = 0;
+        let laserSpawnTimer = 0;
+        let shadowEventTimer = 0;
+        
+        // ---------- FUNCIONES AUX ----------
+        function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+        function randRange(min, max) { return min + Math.random() * (max - min); }
+        function randInt(min, max) { return Math.floor(randRange(min, max + 1)); }
+        
+        function updateUI() {
+            document.getElementById('hp').innerText = hp;
+            document.getElementById('score').innerText = score;
+            
+            document.getElementById('extinctionCount').innerText = extinctionCount;
+        }
+        
+        function healPlayer() {
+            if (hp < 3) {
+                hp++;
+                updateUI();
+                playHealSound();
+                return true;
+            }
+            return false;
+        }
+        
+        function damagePlayer() {
+            if(player.invincible > 0 || gameOver) return;
+            hp--;
+            Cosmetics.onPlayerHit(player.x, player.y); // skin-hit-rings: sueltan anillos si está equipada
+            triggerDamageFlash();
+            updateUI();
+            if(hp <= 0) {
+                gameOver = true;
+                hp = 0;
+                updateUI();
+                stopMusic();
+                menuBtn.classList.remove('hidden');
+            } else {
+                player.invincible = 20;
+            }
+        }
+        
+        function addScore(amount) {
+            score += amount;
+            updateUI();
+        }
+        
+        function spawnHealthItem(x, y) {
+            healthItems.push({
+                x: x, y: y,
+                size: HEALTH_ITEM_SIZE,
+                timer: HEALTH_ITEM_DURATION
+            });
+        }
+        
+        // Matar enemigo y posiblemente soltar vida si fue por dash
+        function killEnemy(enemy, isFromDash, enemyX, enemyY) {
+            addScore(50);
+            if (isFromDash) {
+                spawnHealthItem(enemyX, enemyY);
+            }
+        }
+        
+        function resetGame() {
+            hp = 3;
+            score = 0;
+            gameOver = false;
+            paused = false;
+            pendingSpawns = [];
+            timeScoreCounter = 0;
+            gameTimeFrames = 0;
+            player.x = canvas.width/2;
+            player.y = canvas.height/2;
+            player.invincible = 0;
+            player.pushVx = 0;
+            player.pushVy = 0;
+            dashCooldown = 0;
+            slowEnemies = [];
+            bulletEnemies = [];
+            lasers = [];
+            healthItems = [];
+            movingLasers = [];
+            bouncers = [];
+            asteroids = [];
+            asteroidDebris = [];
+            berserkers = [];
+            Cosmetics.resetEffects();
+            dashTrail.active = false;
+            shadowEvent.active = false;
+            shadowEvent.phase = 0;
+            extinctionEvent.active = false;
+            extinctionEvent.phase = 0;
+            extinctionCount = 0;
+            listRunner.active = false;
+            listRunner.pc = 0;
+            listRunner.waitFrames = 0;
+            listRunner.loopStack = [];
+            listRunner.ifStack = [];
+            confettiParticles = [];
+            canvasTextOverlay = null;
+            updateUI();
+            document.getElementById('gameTime').innerText = formatGameTime(0);
+            menuBtn.classList.add('hidden');
+            restartMusic();
+            if(autoReplayOnRevive) startListRun();
+        }
+
+        // ---------- PANEL DE PRÁCTICA: selección e invocación manual de enemigos ----------
+        const ENEMY_SPRITES = {
+            purp: '<svg width="34" height="34" viewBox="0 0 34 34"><rect x="2" y="2" width="30" height="30" fill="#b77eff"/><rect x="10" y="10" width="14" height="14" fill="#ffaaff"/></svg>',
+            redst: '<svg width="34" height="34" viewBox="0 0 34 34"><rect x="4" y="4" width="26" height="26" fill="#ff3300" style="filter:drop-shadow(0 0 4px red)"/></svg>',
+            laser: '<svg width="34" height="34" viewBox="0 0 34 34"><line x1="4" y1="30" x2="30" y2="4" stroke="#ff9600" stroke-width="5" stroke-dasharray="6,4"/></svg>',
+            extcn: '<svg width="34" height="34" viewBox="0 0 34 34"><circle cx="17" cy="17" r="14" fill="rgba(255,255,200,0.5)" stroke="yellow" stroke-width="3"/></svg>',
+            lamov: '<svg width="34" height="34" viewBox="0 0 34 34"><line x1="17" y1="4" x2="17" y2="30" stroke="#ff9600" stroke-width="5" stroke-dasharray="6,4"/></svg>',
+            banex: '<svg width="34" height="34" viewBox="0 0 34 34"><rect x="6" y="6" width="22" height="22" fill="rgba(255,255,200,0.5)" stroke="yellow" stroke-width="3"/></svg>',
+            pepes: '<svg width="34" height="34" viewBox="0 0 34 34"><rect x="2" y="2" width="30" height="30" fill="#ffcc66"/><rect x="10" y="10" width="14" height="14" fill="#ffe6b3"/></svg>',
+            rock: '<svg width="34" height="34" viewBox="0 0 34 34"><polygon points="17,3 27,8 31,18 24,29 10,30 3,20 6,9" fill="#241a33" stroke="#c98dff" stroke-width="2"/></svg>',
+            brskr: '<svg width="34" height="34" viewBox="0 0 34 34"><polygon points="17,3 31,17 17,31 3,17" fill="#ff5f28" stroke="#ff3300" stroke-width="2"/></svg>'
+        };
+
+        const practiceEnemyList = [
+            { id: 'purp', name: 'PURP', spawn: () => { if(!gameOver) spawnSinglePurp(); } },
+            { id: 'redst', name: 'REDST', spawn: () => { if(!gameOver) spawnSingleRedst(); } },
+            { id: 'laser', name: 'LASER', spawn: () => { if(!gameOver) spawnLaser(); } },
+            { id: 'extcn', name: 'EXTCN', spawn: () => { if(!gameOver) triggerSingleExtcn(); } },
+            { id: 'lamov', name: 'LAMOV', spawn: () => { if(!gameOver) spawnMovingLaser(); } },
+            { id: 'banex', name: 'BANEX', spawn: () => { if(!gameOver) triggerSingleBanex(); } },
+            { id: 'pepes', name: 'PEPES', spawn: () => { if(!gameOver) spawnSingleBouncer(); } },
+            { id: 'rock', name: 'ROCK', spawn: () => { if(!gameOver) spawnSingleRock(); } },
+            { id: 'brskr', name: 'BRSKR', spawn: () => { if(!gameOver) spawnSingleBerserker(); } }
+        ];
+        let selectedEnemyIdx = 0;
+
+        const spawnBtn = document.getElementById('spawnBtn');
+        const spawnSpriteIcon = document.getElementById('spawnSpriteIcon');
+        const spawnSpriteName = document.getElementById('spawnSpriteName');
+        const selectUpBtn = document.getElementById('selectUpBtn');
+        const selectDownBtn = document.getElementById('selectDownBtn');
+
+        function renderSelectedEnemy() {
+            const enemy = practiceEnemyList[selectedEnemyIdx];
+            spawnSpriteIcon.innerHTML = ENEMY_SPRITES[enemy.id];
+            spawnSpriteName.textContent = enemy.name;
+        }
+
+        function selectPracticeEnemy(delta) {
+            selectedEnemyIdx = (selectedEnemyIdx + delta + practiceEnemyList.length) % practiceEnemyList.length;
+            renderSelectedEnemy();
+        }
+
+        spawnBtn.addEventListener('click', () => {
+            initMusic();
+            if(levelCreatorActive) {
+                addInvokeBlock(practiceEnemyList[selectedEnemyIdx].id);
+                return;
+            }
+            if(gameOver) return;
+            if(paused) {
+                pendingSpawns.push(practiceEnemyList[selectedEnemyIdx]);
+            } else {
+                practiceEnemyList[selectedEnemyIdx].spawn();
+            }
+        });
+        selectUpBtn.addEventListener('click', () => selectPracticeEnemy(-1));
+        selectDownBtn.addEventListener('click', () => selectPracticeEnemy(1));
+
+        renderSelectedEnemy();
+
+        // ================== LEVEL CREATOR ==================
+        // Formato .bldh: INICIO&invocar(enemigo(params))&esperar(N)segundos&...&FIN
+        // Separador "&" (en vez de "-") porque los parámetros de posición pueden ser negativos.
+        // Coordenadas x,y: (0,0) es el CENTRO del canvas (no la esquina), estilo plano cartesiano.
+        // X positivo = derecha, X negativo = izquierda. Y positivo = arriba, Y negativo = abajo.
+
+        const levelCreatorActivateEl = document.getElementById('levelCreatorActivate');
+        const levelCreatorBox = document.getElementById('levelCreatorBox');
+        const runPanel = document.getElementById('runPanel');
+        const runListBtn = document.getElementById('runListBtn');
+        const lcList = document.getElementById('lcList');
+        const lcFileInput = document.getElementById('lcFileInput');
+
+        let levelCreatorActive = false;
+        // Lista de bloques: { type:'invoke', enemyId, params:'texto crudo' } | { type:'wait', seconds:N }
+        let levelCreatorList = [];
+        // "Vara" de inserción: índice de levelCreatorList donde cae el PRÓXIMO bloque que se
+        // agregue (0 = arriba de todo, levelCreatorList.length = abajo de todo, debajo del
+        // último bloque). Al insertar, el bloque nuevo entra justo en esta posición y la vara
+        // avanza un lugar (queda debajo del bloque recién puesto, arriba de lo que ya seguía) —
+        // así seguís armando hacia abajo por default, igual que antes, pero se puede mover con
+        // las flechitas de la vara para insertar/editar en medio de la lista sin borrar nada.
+        let insertCursor = 0;
+        let levelLoadedFromFile = false; // logro "Dashing Engineer": ¿la lista actual vino de cargar un .bldh?
+
+        levelCreatorActivateEl.addEventListener('change', () => {
+            levelCreatorActive = levelCreatorActivateEl.checked;
+            levelCreatorBox.classList.toggle('hidden', !levelCreatorActive);
+            runPanel.classList.toggle('hidden', !levelCreatorActive);
+        });
+
+        // Switch verde debajo de ▶: con esto activo, cada vez que el juego se reinicia
+        // (típicamente al revivir tras game over) la lista .bldh cargada se corre sola,
+        // sin tener que tocar ▶ de nuevo — pensado para practicar un desafío en loop.
+        const autoReplayOnReviveEl = document.getElementById('autoReplayOnReviveActivate');
+        let autoReplayOnRevive = false;
+        autoReplayOnReviveEl.addEventListener('change', () => {
+            autoReplayOnRevive = autoReplayOnReviveEl.checked;
+        });
+
+        // Spawns "parametrizados": si hay parámetros válidos, nacen exactamente donde se pide;
+        // si no, se usa el spawn clásico (random) que ya existía en el modo práctica.
+        function spawnPurpAt(x, y) {
+            slowEnemies.push({
+                x: x, y: y, size: 14,
+                vx: (Math.random() - 0.5) * 1.5,
+                vy: (Math.random() - 0.5) * 1.5,
+                maxSpeed: 2.0
+            });
+        }
+
+        function spawnRedstAt(x, y) {
+            bulletEnemies.push({
+                x: x, y: y, size: 10,
+                state: 'aiming',
+                aimTimer: 35,
+                targetX: player.x, targetY: player.y,
+                vx: 0, vy: 0
+            });
+        }
+
+        // Ángulo en grados convencionales (0 = derecha, 90 = abajo), medido desde el punto (x,y)
+        // hacia ambos lados hasta cubrir todo el canvas.
+        function spawnLaserAt(x, y, anguloDeg, aparicionSec, duracionSec) {
+            const rad = anguloDeg * Math.PI / 180;
+            const halfLen = 1200;
+            const x1 = x - Math.cos(rad) * halfLen;
+            const y1 = y - Math.sin(rad) * halfLen;
+            const x2 = x + Math.cos(rad) * halfLen;
+            const y2 = y + Math.sin(rad) * halfLen;
+            lasers.push({
+                x1, y1, x2, y2,
+                charge: Math.max(1, Math.round(aparicionSec * FRAMES_PER_SECOND)),
+                lifetime: Math.max(1, Math.round(duracionSec * FRAMES_PER_SECOND)),
+                pattern: 0
+            });
+        }
+
+        function spawnLamovAt(lado, vel) {
+            const fromLeft = lado === 0;
+            movingLasers.push({
+                x: fromLeft ? 0 : canvas.width,
+                fromLeft: fromLeft,
+                charge: MOVING_LASER_WARMUP,
+                speed: vel,
+                colorIdx: Math.floor(Math.random() * 3)
+            });
+        }
+
+        function triggerExtcnAt(x, y, tiempoSec) {
+            shadowEvent.active = false;
+            shadowEvent.phase = 0;
+            extinctionEvent.active = false;
+            extinctionEvent.phase = 0;
+            shadowEvent.active = true;
+            shadowEvent.phase = 1;
+            shadowEvent.timer = Math.max(1, Math.round(tiempoSec * FRAMES_PER_SECOND));
+            shadowEvent.safeZone = {
+                x: x, y: y, radius: 90,
+                vx: (Math.random() - 0.5) * 1.2,
+                vy: (Math.random() - 0.5) * 1.2
+            };
+        }
+
+        function triggerBanexAt(x, dir) {
+            extinctionEvent.active = false;
+            extinctionEvent.phase = 0;
+            shadowEvent.active = false;
+            shadowEvent.phase = 0;
+            extinctionEvent.active = true;
+            extinctionEvent.phase = 1;
+            extinctionEvent.timer = 240;
+            const half = extinctionEvent.bandWidth / 2;
+            extinctionEvent.x = clamp(x, half, canvas.width - half);
+            extinctionEvent.vx = (dir === 0 ? -1 : 1) * EXTINCTION_SPEED;
+        }
+
+        function spawnPepesAt(x, y, tiempoSec) {
+            const angle = Math.random() * Math.PI * 2;
+            bouncers.push({
+                x: x, y: y, size: BOUNCER_SIZE,
+                vx: Math.cos(angle) * BOUNCER_SPEED,
+                vy: Math.sin(angle) * BOUNCER_SPEED,
+                life: Math.max(1, Math.round(tiempoSec * FRAMES_PER_SECOND)),
+                leaving: false
+            });
+        }
+
+        function spawnRockAt(x, y, tier) {
+            const moveAngle = Math.random() * Math.PI * 2;
+            const speed = randRange(ROCK_SPEED_MIN, ROCK_SPEED_MAX);
+            const vx = Math.cos(moveAngle) * speed;
+            const vy = Math.sin(moveAngle) * speed;
+            asteroids.push(createAsteroid(x, y, clamp(Math.round(tier), 1, 3), vx, vy));
+        }
+
+        function spawnBrskrAt(x, y, vidas) {
+            const particleCount = randInt(BERSERKER_SPAWN_PARTICLES_MIN, BERSERKER_SPAWN_PARTICLES_MAX);
+            const spawnParticles = [];
+            for(let i=0; i<particleCount; i++) {
+                spawnParticles.push({
+                    angle: Math.random() * Math.PI * 2,
+                    dist: BERSERKER_SPAWN_RADIUS * (0.55 + Math.random() * 0.55)
+                });
+            }
+            berserkers.push({
+                x, y, size: BERSERKER_SIZE,
+                vx: 0, vy: 0,
+                hp: Math.max(1, Math.round(vidas)),
+                rotation: Math.random() * Math.PI * 2,
+                blinkTimer: 0,
+                spawnTimer: BERSERKER_MATERIALIZE_DURATION,
+                spawnParticles
+            });
+        }
+
+        // Nombres de parámetros por enemigo (en orden), función parametrizada y función random (fallback).
+        // paramLabels (opcional): para parámetros con opciones fijas (no números libres), texto a
+        // mostrar en el placeholder en vez del nombre — mismo orden que "params".
+        const ENEMY_PARAM_SPECS = {
+            purp:  { params: ['x','y'],                                run: spawnPurpAt,    fallback: () => { if(!gameOver) spawnSinglePurp(); } },
+            redst: { params: ['x','y'],                                run: spawnRedstAt,   fallback: () => { if(!gameOver) spawnSingleRedst(); } },
+            laser: { params: ['x','y','angulo','aparicion','duracion'],run: spawnLaserAt,   fallback: () => { if(!gameOver) spawnLaser(); } },
+            extcn: { params: ['x','y','tiempo'],                       run: triggerExtcnAt, fallback: () => { if(!gameOver) triggerSingleExtcn(); } },
+            lamov: { params: ['lado','vel'],                           run: spawnLamovAt,   fallback: () => { if(!gameOver) spawnMovingLaser(); },
+                     paramLabels: ['0=izq/1=der','vel'] },
+            banex: { params: ['x','dir'],                              run: triggerBanexAt, fallback: () => { if(!gameOver) triggerSingleBanex(); },
+                     paramLabels: ['x','0=izq/1=der'] },
+            pepes: { params: ['x','y','tiempo'],                       run: spawnPepesAt,   fallback: () => { if(!gameOver) spawnSingleBouncer(); } },
+            rock:  { params: ['x','y','tier'],                         run: spawnRockAt,    fallback: () => { if(!gameOver) spawnSingleRock(); },
+                     paramLabels: ['x','y','tier(1-3)'] },
+            brskr: { params: ['x','y','vidas'],                        run: spawnBrskrAt,   fallback: () => { if(!gameOver) spawnSingleBerserker(); } }
+        };
+
+
+        // El usuario escribe x,y con el centro del canvas como (0,0) — más intuitivo
+        // que el (0,0) interno de <canvas>, que está en la esquina superior izquierda.
+        // El eje Y se mantiene igual que el del canvas: valores positivos bajan, negativos suben.
+        function centeredToCanvasCoords(paramName, value) {
+            if(paramName === 'x') return value + canvas.width / 2;
+            if(paramName === 'y') return canvas.height / 2 - value; // Y invertido: positivo = arriba
+            return value;
+        }
+
+        function executeInvokeBlock(block) {
+            const spec = ENEMY_PARAM_SPECS[block.enemyId];
+            if(!spec) return;
+            const raw = (block.params || '').trim();
+            if(raw === '') { spec.fallback(); return; }
+            const values = raw.split(',').map(v => parseFloat(v.trim()));
+            if(values.length !== spec.params.length || values.some(v => isNaN(v))) {
+                spec.fallback();
+                return;
+            }
+            const canvasValues = values.map((v, i) => centeredToCanvasCoords(spec.params[i], v));
+            spec.run(...canvasValues);
+        }
+
+        // ---------- Edición de la lista ----------
+        function blockToDisplayText(block) {
+            if(block.type === 'wait') return `esperar(${block.seconds})segundos`;
+            if(block.type === 'invoke') return `invocar(${block.enemyId}(${block.params || ''}))`;
+            if(block.type === 'repeat') {
+                const parts = (block.params || '').split(',');
+                const veces = (parts[0] || '').trim();
+                const dir = (parts[1] || '').trim();
+                const bloques = (parts[2] || '').trim();
+                return `Repetir(${veces})veces(${dir})bloques(${bloques})`;
+            }
+            if(block.type === 'complex') return `Complejo.${block.params || ''}`;
+            return '';
+        }
+
+        function isEditableBlock(block) {
+            return block.type === 'invoke' || block.type === 'repeat' || block.type === 'complex';
+        }
+
+        function blockParamPlaceholder(block) {
+            if(block.type === 'invoke') {
+                const spec = ENEMY_PARAM_SPECS[block.enemyId];
+                return spec ? (spec.paramLabels || spec.params).join(',') : '';
+            }
+            if(block.type === 'repeat') return 'veces,1=arriba/2=abajo,bloques';
+            if(block.type === 'complex') return 'Confeti | Texto("txt")por(seg) | MusicHTMLFunc(archivo.mp3) | Si(vacio|vidas>#|vidas=#|vidas<#)Entonces(N)Sino(M) | Repetirinfveces(1/2)bloques(N)';
+            return '';
+        }
+
+        function renderLevelCreatorList() {
+            if(insertCursor > levelCreatorList.length) insertCursor = levelCreatorList.length;
+            if(insertCursor < 0) insertCursor = 0;
+            lcList.innerHTML = '';
+            for(let idx = 0; idx <= levelCreatorList.length; idx++) {
+                if(idx === insertCursor) lcList.appendChild(buildCursorBar());
+                if(idx < levelCreatorList.length) {
+                    const block = levelCreatorList[idx];
+                    const div = document.createElement('div');
+                    div.className = 'lc-block';
+                    div.dataset.idx = idx;
+                    div.textContent = blockToDisplayText(block);
+                    if(isEditableBlock(block)) {
+                        div.title = 'Click para editar parámetros';
+                        div.addEventListener('click', () => editParamBlock(idx));
+                    }
+                    lcList.appendChild(div);
+                }
+            }
+            const cursorEl = lcList.querySelector('.lc-cursor');
+            if(cursorEl) cursorEl.scrollIntoView({ block: 'nearest' });
+        }
+
+        // La vara: línea brillante que marca dónde cae el próximo bloque. Sus dos flechitas
+        // la mueven un lugar hacia arriba/abajo entre bloques (o hasta los extremos).
+        function buildCursorBar() {
+            const bar = document.createElement('div');
+            bar.className = 'lc-cursor';
+            const up = document.createElement('button');
+            up.className = 'lc-cursor-arrow';
+            up.textContent = '▲';
+            up.title = 'Subir la vara';
+            up.disabled = insertCursor <= 0;
+            up.addEventListener('click', (e) => { e.stopPropagation(); moveCursor(-1); });
+            const line = document.createElement('div');
+            line.className = 'lc-cursor-line';
+            const down = document.createElement('button');
+            down.className = 'lc-cursor-arrow';
+            down.textContent = '▼';
+            down.title = 'Bajar la vara';
+            down.disabled = insertCursor >= levelCreatorList.length;
+            down.addEventListener('click', (e) => { e.stopPropagation(); moveCursor(1); });
+            bar.appendChild(up);
+            bar.appendChild(line);
+            bar.appendChild(down);
+            return bar;
+        }
+
+        function moveCursor(delta) {
+            insertCursor = Math.max(0, Math.min(levelCreatorList.length, insertCursor + delta));
+            renderLevelCreatorList();
+        }
+
+        function editParamBlock(idx) {
+            const block = levelCreatorList[idx];
+            if(!block || !isEditableBlock(block)) return;
+            const div = lcList.querySelector(`.lc-block[data-idx="${idx}"]`);
+            if(!div) return;
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'lc-param-input';
+            input.value = block.params || '';
+            input.placeholder = blockParamPlaceholder(block);
+            div.textContent = '';
+            div.appendChild(input);
+            input.focus();
+            const commit = () => {
+                block.params = input.value.trim();
+                renderLevelCreatorList();
+            };
+            input.addEventListener('blur', commit);
+            input.addEventListener('keydown', (e) => {
+                e.stopPropagation();
+                if(e.key === 'Enter') { e.preventDefault(); input.blur(); }
+            });
+            input.addEventListener('keyup', (e) => e.stopPropagation());
+            input.addEventListener('click', (e) => e.stopPropagation());
+        }
+
+        // Todo alta de bloque entra justo en la posición de la vara y la empuja un lugar hacia
+        // abajo, para que quede debajo de lo que se acaba de poner (arriba de lo que ya seguía).
+        function addInvokeBlock(enemyId) {
+            levelCreatorList.splice(insertCursor, 0, { type: 'invoke', enemyId: enemyId, params: '' });
+            insertCursor++;
+            renderLevelCreatorList();
+        }
+
+        function addRepeatBlock() {
+            levelCreatorList.splice(insertCursor, 0, { type: 'repeat', params: '' });
+            insertCursor++;
+            renderLevelCreatorList();
+        }
+
+        function addComplexBlock() {
+            levelCreatorList.splice(insertCursor, 0, { type: 'complex', params: '' });
+            insertCursor++;
+            renderLevelCreatorList();
+        }
+
+        function addOrIncrementWaitBlock() {
+            const prev = levelCreatorList[insertCursor - 1];
+            if(prev && prev.type === 'wait') {
+                prev.seconds++;
+            } else {
+                levelCreatorList.splice(insertCursor, 0, { type: 'wait', seconds: 1 });
+                insertCursor++;
+            }
+            renderLevelCreatorList();
+        }
+
+        function flashBlockRedAt(idx) {
+            const el = lcList.querySelector(`.lc-block[data-idx="${idx}"]`);
+            if(!el) return;
+            el.classList.remove('lc-flash');
+            void el.offsetWidth; // reinicia la animación si se repite el click
+            el.classList.add('lc-flash');
+        }
+
+        // ❌ ahora opera sobre el bloque que está JUSTO ARRIBA de la vara (el "último puesto"
+        // desde el punto de vista de la vara, sea o no el último del array), y la vara baja
+        // un lugar junto con el borrado para seguir pegada al mismo punto.
+        function undoLastBlock() {
+            if(insertCursor === 0) return; // no hay nada arriba de la vara
+            const idx = insertCursor - 1;
+            const target = levelCreatorList[idx];
+            if(target.type === 'wait') {
+                target.seconds--;
+                if(target.seconds <= 0) {
+                    levelCreatorList.splice(idx, 1);
+                    insertCursor--;
+                }
+                renderLevelCreatorList();
+            } else if(isEditableBlock(target)) {
+                if(!target.params || target.params.trim() === '') {
+                    levelCreatorList.splice(idx, 1);
+                    insertCursor--;
+                    renderLevelCreatorList();
+                } else {
+                    // Tiene parámetros definidos: hay que vaciarlos antes de poder borrar el bloque
+                    flashBlockRedAt(idx);
+                }
+            }
+        }
+
+        function clearLevelCreatorList() {
+            levelCreatorList = [];
+            insertCursor = 0;
+            levelLoadedFromFile = false;
+            renderLevelCreatorList();
+        }
+
+        document.getElementById('lcClearBtn').addEventListener('click', clearLevelCreatorList);
+        document.getElementById('lcWaitBtn').addEventListener('click', addOrIncrementWaitBlock);
+        document.getElementById('lcUndoBtn').addEventListener('click', undoLastBlock);
+        document.getElementById('lcLoadBtn').addEventListener('click', () => lcFileInput.click());
+        document.getElementById('lcRepeatBtn').addEventListener('click', addRepeatBlock);
+        document.getElementById('lcComplexBtn').addEventListener('click', addComplexBlock);
+
+        lcFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                loadBldhText(String(ev.target.result || ''));
+                // logro "Dashing Engineer": se cargó un archivo real con al menos un bloque válido
+                levelLoadedFromFile = levelCreatorList.length > 0;
+            };
+            reader.readAsText(file);
+            lcFileInput.value = '';
+        });
+
+        document.getElementById('lcExportBtn').addEventListener('click', exportBldh);
+
+        // ---------- Serialización .bldh ----------
+        function serializeBldh() {
+            const parts = ['INICIO'];
+            for(const block of levelCreatorList) parts.push(blockToDisplayText(block));
+            parts.push('FIN');
+            return parts.join('&');
+        }
+
+        function exportBldh() {
+            const text = serializeBldh();
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'nivel.bldh';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function loadBldhText(text) {
+            const parts = text.split('&').map(p => p.trim()).filter(p => p.length > 0);
+            const newList = [];
+            for(const part of parts) {
+                if(part === 'INICIO' || part === 'FIN') continue;
+                let m = part.match(/^invocar\(([a-zA-Z]+)\((.*)\)\)$/);
+                if(m) {
+                    const enemyId = m[1].toLowerCase();
+                    if(ENEMY_PARAM_SPECS[enemyId]) {
+                        newList.push({ type: 'invoke', enemyId: enemyId, params: m[2].trim() });
+                    }
+                    continue;
+                }
+                m = part.match(/^esperar\((\d+)\)segundos$/);
+                if(m) {
+                    newList.push({ type: 'wait', seconds: parseInt(m[1], 10) });
+                    continue;
+                }
+                m = part.match(/^Repetir\((.*)\)veces\((.*)\)bloques\((.*)\)$/);
+                if(m) {
+                    newList.push({ type: 'repeat', params: `${m[1].trim()},${m[2].trim()},${m[3].trim()}` });
+                    continue;
+                }
+                m = part.match(/^Complejo\.(.*)$/);
+                if(m) {
+                    newList.push({ type: 'complex', params: m[1] });
+                }
+            }
+            levelCreatorList = newList;
+            insertCursor = newList.length;
+            renderLevelCreatorList();
+        }
+
+        // ================== INTÉRPRETE (correr la lista) ==================
+        // Antes esto era un "compilador": flattenLevelList desenrollaba TODA la lista a un
+        // array plano de instrucciones antes de arrancar (una macro-expansión, tipo #define).
+        // Eso hacía imposible un loop infinito real: para "desenrollarlo" habría que generar
+        // un array infinito ANTES de jugar, lo cual cuelga la pestaña sin llegar a ejecutar
+        // nada. Ahora es un intérprete de verdad: un program counter (pc) que recorre
+        // directamente levelCreatorList y puede saltar hacia atrás (goto), como el fetch-
+        // decode-execute de una CPU. Un Repetir/Complejo infinito simplemente nunca deja de
+        // saltar — no cuesta memoria ni tiempo de arranque, vive mientras el jugador juegue.
+        //
+        // "Repetir(veces)veces(dir)bloques(cantidad)" y "Complejo.Repetirinfveces(dir)bloques(N)"
+        // (repetición infinita) NO son loops con apertura/cierre: apuntan hacia arriba (dir=1)
+        // o hacia abajo (dir=2) de sí mismos en la lista, contando los "bloques" bloques más
+        // cercanos en esa dirección — CUALQUIER tipo de bloque cuenta ahora (antes solo se
+        // contaban invocar/esperar), precisamente para que un Repetir pueda apuntar a otro
+        // Repetir/Complejo y armar loops anidados sin restricciones artificiales.
+        // - dir=1 (arriba): el segmento ya corrió 1 vez de forma natural al llegar hasta acá,
+        //   así que se repite (veces-1) veces más (Infinity si veces=∞), para sumar "veces"
+        //   pasadas en total.
+        // - dir=2 (abajo): el segmento todavía no corrió, así que se ejecuta "veces" veces
+        //   completas ahora mismo, y al terminar el pc salta más allá del segmento para que la
+        //   lista no lo vuelva a correr "solo" cuando el flujo natural llegue a esa posición.
+        let listRunner = { active: false, pc: 0, waitFrames: 0, loopStack: [], ifStack: [] };
+        const LEVEL_RUNNER_MAX_STEPS_PER_FRAME = 10000; // salvavidas: solo protege contra bugs (segmentos mal formados), no contra loops infinitos válidos
+
+        // Interpreta los params de un bloque 'repeat' o de un 'complex' que sea
+        // "Repetirinfveces(dir)bloques(N)" (repetición infinita). Devuelve
+        // {veces, dir, bloques} (veces puede ser Infinity) o null si no aplica / es inválido.
+        function getRepeatSpec(block) {
+            if(block.type === 'repeat') {
+                const parts = (block.params || '').split(',').map(v => parseFloat(v.trim()));
+                const veces = Math.round(parts[0]);
+                const dir = Math.round(parts[1]);
+                const bloques = Math.round(parts[2]);
+                const valid = parts.length === 3 && Number.isFinite(veces) && veces >= 1
+                    && (dir === 1 || dir === 2) && Number.isFinite(bloques) && bloques >= 1;
+                return valid ? { veces, dir, bloques } : null;
+            }
+            if(block.type === 'complex') {
+                const m = (block.params || '').match(/^Repetirinfveces\((\d)\)bloques\((\d+)\)$/);
+                if(!m) return null;
+                const dir = parseInt(m[1], 10);
+                const bloques = parseInt(m[2], 10);
+                if((dir === 1 || dir === 2) && bloques >= 1) return { veces: Infinity, dir, bloques };
+                return null;
+            }
+            return null;
+        }
+
+        // Dado el índice recién ejecutado, decide a dónde saltar: si es el final del segmento
+        // de un loop activo, hay que volver al bloque Repetir/Complejo que lo generó (en vez de
+        // seguir a la instrucción siguiente en línea recta). Si es el final del segmento
+        // Entonces de un Complejo.Si activo, hay que saltarse el Sino entero (si lo hay).
+        function nextPcAfter(executedIndex) {
+            const ifTop = listRunner.ifStack[listRunner.ifStack.length - 1];
+            if(ifTop && ifTop.segEnd === executedIndex) {
+                listRunner.ifStack.pop();
+                return ifTop.skipTo;
+            }
+            const top = listRunner.loopStack[listRunner.loopStack.length - 1];
+            if(top && top.segEnd === executedIndex) return top.blockIndex;
+            return executedIndex + 1;
+        }
+
+        // Interpreta los params de un "Complejo.Si(condicion)Entonces(N)Sino(M)". El N de
+        // Entonces es obligatorio (>=1); el M de Sino puede venir vacío o en 0, lo que
+        // significa "no hay rama Sino". Devuelve {cond, entoncesN, sinoM} o null si no matchea
+        // o el Entonces está vacío/inválido.
+        function getSiSpec(block) {
+            if(block.type !== 'complex') return null;
+            const m = (block.params || '').match(/^Si\((.*?)\)Entonces\((\d+)\)Sino\((\d*)\)$/);
+            if(!m) return null;
+            const entoncesN = parseInt(m[2], 10);
+            if(!Number.isFinite(entoncesN) || entoncesN < 1) return null;
+            let sinoM = m[3] === '' ? 0 : parseInt(m[3], 10);
+            if(!Number.isFinite(sinoM) || sinoM < 0) sinoM = 0;
+            return { cond: m[1], entoncesN, sinoM };
+        }
+
+        // Evalúa la condición dentro de un Complejo.Si. "vacio" (la palabra literal, no dejar
+        // el campo en blanco) pregunta si hay enemigos vivos en pantalla — cuentan purps,
+        // redsts, pepes, berserkers y asteroides de cualquier tier (no cuentan lasers/extcn/
+        // banex, que son hazards de entorno, no enemigos). "vidas>#", "vidas=#" y "vidas<#"
+        // comparan directamente contra las vidas (hp) actuales del jugador.
+        function evaluateSiCondition(condStr) {
+            const cond = (condStr || '').trim();
+            if(cond === 'vacio') {
+                return slowEnemies.length > 0 || bulletEnemies.length > 0 || bouncers.length > 0
+                    || berserkers.length > 0 || asteroids.length > 0;
+            }
+            const m = cond.match(/^vidas(>|=|<)(\d+)$/);
+            if(m) {
+                const n = parseInt(m[2], 10);
+                if(m[1] === '>') return hp > n;
+                if(m[1] === '=') return hp === n;
+                if(m[1] === '<') return hp < n;
+            }
+            return false; // condición desconocida/mal formada: se toma como falsa (rama Sino)
+        }
+
+        // Resuelve un Complejo.Si al llegar el pc a su posición i. Layout esperado en la lista:
+        // [Si][...N bloques de Entonces...][...M bloques de Sino...][sigue de largo]
+        // Si la condición es verdadera corre el Entonces y salta todo el Sino al terminar.
+        // Si es falsa, salta el Entonces entero y corre el Sino (si existe); si no existe,
+        // sigue de largo justo después del Entonces.
+        function handleSiBlock(i, block) {
+            const spec = getSiSpec(block);
+            if(!spec) { listRunner.pc = i + 1; return; }
+
+            const entoncesStart = i + 1;
+            const entoncesEnd = Math.min(levelCreatorList.length - 1, i + spec.entoncesN);
+            if(entoncesStart > entoncesEnd) { listRunner.pc = i + 1; return; } // no hay bloques que tomar: inválido
+
+            const sinoStart = entoncesEnd + 1;
+            const sinoEnd = Math.min(levelCreatorList.length - 1, entoncesEnd + spec.sinoM);
+            const hasSino = spec.sinoM > 0 && sinoStart <= sinoEnd;
+            const afterAll = hasSino ? sinoEnd + 1 : sinoStart;
+
+            if(evaluateSiCondition(spec.cond)) {
+                listRunner.ifStack.push({ segEnd: entoncesEnd, skipTo: afterAll });
+                listRunner.pc = entoncesStart;
+            } else if(hasSino) {
+                listRunner.pc = sinoStart; // al terminar el Sino cae solo en afterAll, no hace falta marcarlo
+            } else {
+                listRunner.pc = afterAll;
+            }
+        }
+
+        // Complejos que disparan un efecto puntual (no controlan flujo, como un invocar):
+        // Confeti, Texto("...")por(seg) y MusicHTMLFunc(archivo.mp3). Devuelve true si el
+        // texto del bloque matcheó alguno de estos y ya se ejecutó, false si no es ninguno.
+        function executeComplexAction(block) {
+            const params = block.params || '';
+            if(params === 'Confeti') {
+                triggerConfetti();
+                return true;
+            }
+            let m = params.match(/^Texto\("([\s\S]*)"\)por\(([\d.]+)\)$/);
+            if(m) {
+                showCanvasText(m[1], parseFloat(m[2]));
+                return true;
+            }
+            m = params.match(/^MusicHTMLFunc\(([^()]+)\)$/);
+            if(m) {
+                changeBackgroundMusic(m[1].trim());
+                return true;
+            }
+            return false;
+        }
+
+        // Resuelve un bloque Repetir/Complejo-infinito al llegar el pc a su posición i.
+        // Si la cima de la pila ya es ESTE bloque, es que estamos "volviendo" tras correr el
+        // segmento de nuevo: decide si repetir otra vuelta o terminar. Si no, es la primera vez
+        // que se entra en esta pasada concreta: arma el segmento y salta a su inicio.
+        function handleRepeatOrComplex(i, block) {
+            const spec = getRepeatSpec(block);
+            if(!spec) { listRunner.pc = i + 1; return; } // inválido / vacío: no hace nada
+
+            const top = listRunner.loopStack[listRunner.loopStack.length - 1];
+            if(top && top.blockIndex === i) {
+                if(top.remaining !== Infinity) top.remaining--;
+                if(top.remaining === Infinity || top.remaining > 0) {
+                    listRunner.pc = top.segStart;
+                } else {
+                    listRunner.loopStack.pop();
+                    listRunner.pc = (spec.dir === 2) ? top.segEnd + 1 : i + 1;
+                }
+                return;
+            }
+
+            let segStart, segEnd, remaining;
+            if(spec.dir === 1) {
+                segEnd = i - 1;
+                segStart = Math.max(0, i - spec.bloques);
+                if(segEnd < segStart) { listRunner.pc = i + 1; return; } // no hay nada antes (ej: Repetir es el primer bloque)
+                remaining = (spec.veces === Infinity) ? Infinity : spec.veces - 1;
+                if(remaining === 0) { listRunner.pc = i + 1; return; } // veces=1: ya corrió su única pasada, nada que repetir
+            } else {
+                segStart = i + 1;
+                segEnd = Math.min(levelCreatorList.length - 1, i + spec.bloques);
+                if(segStart > segEnd) { listRunner.pc = i + 1; return; } // no hay nada después
+                remaining = spec.veces; // ninguna pasada corrió todavía
+            }
+
+            // Dos rangos de loop solo pueden convivir en la pila si están bien anidados —
+            // uno completamente adentro del otro, como paréntesis balanceados "( [ ] )" — o
+            // completamente separados. Si se CRUZAN a medias, como "( [ ) ]" (ej: un Repetir
+            // apunta a un rango que incluye a otro Repetir cuyo propio rango lo incluye de
+            // vuelta a él), el chequeo de "¿es la cima de la pila?" nunca hace match y cada
+            // uno empuja un frame nuevo sin parar: la pila crece sin límite (memory leak) en
+            // vez de resolverse. Se detecta acá y se trata como bloque inválido (no-op) —
+            // no tiene una semántica coherente de "cuál termina primero", igual que paréntesis
+            // cruzados no se pueden resolver.
+            for(const frame of listRunner.loopStack) {
+                const overlap = segStart <= frame.segEnd && frame.segStart <= segEnd;
+                if(!overlap) continue;
+                const thisContainsFrame = segStart <= frame.segStart && frame.segEnd <= segEnd;
+                const frameContainsThis = frame.segStart <= segStart && segEnd <= frame.segEnd;
+                if(!thisContainsFrame && !frameContainsThis) {
+                    listRunner.pc = i + 1; // rango cruzado con un loop activo: inválido, no hace nada
+                    return;
+                }
+            }
+
+            listRunner.loopStack.push({ blockIndex: i, segStart, segEnd, remaining });
+            listRunner.pc = segStart;
+        }
+
+        function startListRun() {
+            if(levelCreatorList.length === 0 || gameOver) return;
+            if(levelLoadedFromFile) {
+                Achievements.tryUnlock('dashing-engineer', Achievements.MODES.PRACTICE);
+            }
+            listRunner.active = true;
+            listRunner.pc = 0;
+            listRunner.waitFrames = 0;
+            listRunner.loopStack = [];
+            listRunner.ifStack = [];
+        }
+
+        // Se llama una vez por frame. Los bloques de control (repeat/complex) se resuelven
+        // "gratis" en la misma pasada (no ejecutan nada por sí mismos, así que no consumen
+        // tiempo de juego) hasta toparse con un invocar/esperar real, que sí consume el frame —
+        // igual que el runner viejo hacía exactamente una acción por frame.
+        function updateListRunner() {
+            if(!listRunner.active) return;
+            if(gameOver) { listRunner.active = false; return; }
+            if(listRunner.waitFrames > 0) {
+                listRunner.waitFrames--;
+                return;
+            }
+            for(let steps = 0; steps < LEVEL_RUNNER_MAX_STEPS_PER_FRAME; steps++) {
+                if(listRunner.pc < 0 || listRunner.pc >= levelCreatorList.length) {
+                    listRunner.active = false; // la lista terminó: el juego sigue con normalidad
+                    return;
+                }
+                const i = listRunner.pc;
+                const block = levelCreatorList[i];
+                if(block.type === 'invoke') {
+                    executeInvokeBlock(block);
+                    listRunner.pc = nextPcAfter(i);
+                    return; // una invocación por frame
+                } else if(block.type === 'wait') {
+                    listRunner.waitFrames = Math.max(1, Math.round(block.seconds * FRAMES_PER_SECOND));
+                    listRunner.pc = nextPcAfter(i);
+                    return; // el conteo de la espera arranca este mismo frame
+                } else if(block.type === 'repeat' || (block.type === 'complex' && getRepeatSpec(block))) {
+                    handleRepeatOrComplex(i, block); // no consume frame: seguimos el for
+                } else if(block.type === 'complex' && getSiSpec(block)) {
+                    handleSiBlock(i, block); // salto condicional puro: tampoco consume frame
+                } else if(block.type === 'complex' && executeComplexAction(block)) {
+                    listRunner.pc = nextPcAfter(i);
+                    return; // dispara el efecto (confeti/texto/música): consume un frame, igual que invocar
+                } else {
+                    listRunner.pc = i + 1; // 'complex' que no matchea nada conocido: no-op
+                }
+            }
+            // Si se llega hasta acá, algo dejó de avanzar sin ejecutar nada en miles de pasos
+            // (un bug real, ej. un segmento mal formado) — no es el caso de un loop infinito
+            // válido, que siempre termina pasando por un invocar/esperar en cada vuelta.
+            console.warn('Level runner: límite de pasos por frame alcanzado sin avanzar. Deteniendo para evitar colgar la pestaña.');
+            listRunner.active = false;
+        }
+
+        runListBtn.addEventListener('click', () => {
+            initMusic();
+            startListRun();
+        });
+        
+        // Spawn de GRUPO de enemigos lentos
+        function spawnSlowEnemyGroup() {
+            let count = Math.floor(Math.random() * 3) + 3;
+            for(let g=0; g<count; g++) {
+                let side = Math.floor(Math.random() * 4);
+                let x, y;
+                if(side === 0) { x = Math.random() * canvas.width; y = -30; }
+                else if(side === 1) { x = canvas.width + 30; y = Math.random() * canvas.height; }
+                else if(side === 2) { x = Math.random() * canvas.width; y = canvas.height + 30; }
+                else { x = -30; y = Math.random() * canvas.height; }
+                
+                slowEnemies.push({
+                    x: x, y: y, size: 14,
+                    vx: (Math.random() - 0.5) * 1.5,
+                    vy: (Math.random() - 0.5) * 1.5,
+                    maxSpeed: 2.0
+                });
+            }
+        }
+
+        // PRACTICE MODE: spawnea un solo Purp desde un borde random, bajo la misma lógica de siempre
+        function spawnSinglePurp() {
+            let side = Math.floor(Math.random() * 4);
+            let x, y;
+            if(side === 0) { x = Math.random() * canvas.width; y = -30; }
+            else if(side === 1) { x = canvas.width + 30; y = Math.random() * canvas.height; }
+            else if(side === 2) { x = Math.random() * canvas.width; y = canvas.height + 30; }
+            else { x = -30; y = Math.random() * canvas.height; }
+
+            slowEnemies.push({
+                x: x, y: y, size: 14,
+                vx: (Math.random() - 0.5) * 1.5,
+                vy: (Math.random() - 0.5) * 1.5,
+                maxSpeed: 2.0
+            });
+        }
+        
+        // Spawn de GRUPO de proyectiles rápidos
+        function spawnBulletEnemyGroup() {
+            let count = Math.floor(Math.random() * 3) + 2;
+            for(let g=0; g<count; g++) {
+                let angle = Math.random() * Math.PI * 2;
+                let distance = 350 + Math.random() * 100;
+                let x = player.x + Math.cos(angle) * distance;
+                let y = player.y + Math.sin(angle) * distance;
+                x = clamp(x, 40, canvas.width - 40);
+                y = clamp(y, 40, canvas.height - 40);
+                
+                bulletEnemies.push({
+                    x: x, y: y, size: 10,
+                    state: 'aiming',
+                    aimTimer: 35,
+                    targetX: player.x, targetY: player.y,
+                    vx: 0, vy: 0
+                });
+            }
+        }
+
+        // PRACTICE MODE: spawnea un solo Redst, bajo la misma lógica de siempre (posición relativa al jugador)
+        function spawnSingleRedst() {
+            let angle = Math.random() * Math.PI * 2;
+            let distance = 350 + Math.random() * 100;
+            let x = player.x + Math.cos(angle) * distance;
+            let y = player.y + Math.sin(angle) * distance;
+            x = clamp(x, 40, canvas.width - 40);
+            y = clamp(y, 40, canvas.height - 40);
+
+            bulletEnemies.push({
+                x: x, y: y, size: 10,
+                state: 'aiming',
+                aimTimer: 35,
+                targetX: player.x, targetY: player.y,
+                vx: 0, vy: 0
+            });
+        }
+        
+        // Laser
+        function spawnLaser() {
+            let edge = Math.floor(Math.random() * 4);
+            let fromX, fromY, toX, toY, pattern;
+            pattern = Math.floor(Math.random() * 3);
+            
+            if(edge === 0) {
+                fromX = Math.random() * canvas.width;
+                fromY = 0;
+                if(pattern === 0) { toX = fromX; toY = canvas.height; }
+                else if(pattern === 1) { toX = fromX + 250; toY = 0; }
+                else { toX = fromX - 200; toY = canvas.height; }
+            } else if(edge === 1) {
+                fromX = canvas.width;
+                fromY = Math.random() * canvas.height;
+                if(pattern === 0) { toX = 0; toY = fromY; }
+                else if(pattern === 1) { toX = canvas.width; toY = fromY + 250; }
+                else { toX = 0; toY = fromY - 200; }
+            } else if(edge === 2) {
+                fromX = Math.random() * canvas.width;
+                fromY = canvas.height;
+                if(pattern === 0) { toX = fromX; toY = 0; }
+                else if(pattern === 1) { toX = fromX - 250; toY = canvas.height; }
+                else { toX = fromX + 200; toY = 0; }
+            } else {
+                fromX = 0;
+                fromY = Math.random() * canvas.height;
+                if(pattern === 0) { toX = canvas.width; toY = fromY; }
+                else if(pattern === 1) { toX = 0; toY = fromY - 250; }
+                else { toX = canvas.width; toY = fromY + 200; }
+            }
+            
+            lasers.push({
+                x1: fromX, y1: fromY, x2: toX, y2: toY,
+                charge: 45,
+                lifetime: 40,
+                pattern: pattern
+            });
+        }
+        
+        // SOMBRA GLOBAL (Extcn — circular, del Classic)
+        function startShadowEvent() {
+            if(shadowEvent.active) return;
+            shadowEvent.active = true;
+            shadowEvent.phase = 1;
+            shadowEvent.timer = 240;
+            shadowEvent.safeZone = {
+                x: Math.random() * (canvas.width - 200) + 100,
+                y: Math.random() * (canvas.height - 200) + 100,
+                radius: 90,
+                vx: (Math.random() - 0.5) * 1.2,
+                vy: (Math.random() - 0.5) * 1.2
+            };
+        }
+
+        // PRACTICE MODE: si CUALQUIERA de los dos eventos de extinción (Extcn circular o Banex en banda)
+        // ya está en curso, los borra a ambos y arranca el circular desde cero
+        function triggerSingleExtcn() {
+            shadowEvent.active = false;
+            shadowEvent.phase = 0;
+            extinctionEvent.active = false;
+            extinctionEvent.phase = 0;
+            startShadowEvent();
+        }
+
+        // BANDA DE EXTINCIÓN (Banex — vertical, del Metro)
+        function startExtinctionEvent() {
+            if(extinctionEvent.active) return;
+            extinctionEvent.active = true;
+            extinctionEvent.phase = 1;
+            extinctionEvent.timer = 240;
+            extinctionEvent.x = Math.random() * (canvas.width - extinctionEvent.bandWidth) + extinctionEvent.bandWidth/2;
+            extinctionEvent.vx = (Math.random() < 0.5 ? -1 : 1) * EXTINCTION_SPEED;
+        }
+
+        // PRACTICE MODE: igual que arriba pero al revés — borra ambos eventos y arranca la banda
+        function triggerSingleBanex() {
+            extinctionEvent.active = false;
+            extinctionEvent.phase = 0;
+            shadowEvent.active = false;
+            shadowEvent.phase = 0;
+            startExtinctionEvent();
+        }
+
+        function updateExtinctionEvent() {
+            if(!extinctionEvent.active) return;
+
+            if(extinctionEvent.phase === 1) {
+                extinctionEvent.x += extinctionEvent.vx;
+                const half = extinctionEvent.bandWidth/2;
+                if(extinctionEvent.x - half < 0) { extinctionEvent.x = half; extinctionEvent.vx = Math.abs(extinctionEvent.vx); }
+                if(extinctionEvent.x + half > canvas.width) { extinctionEvent.x = canvas.width - half; extinctionEvent.vx = -Math.abs(extinctionEvent.vx); }
+
+                extinctionEvent.timer--;
+                if(extinctionEvent.timer <= 0) {
+                    extinctionEvent.phase = 2;
+                    const left = extinctionEvent.x - half;
+                    const right = extinctionEvent.x + half;
+                    if(player.x < left || player.x > right) {
+                        damagePlayer();
+                    } else {
+                        addScore(100);
+                    }
+                    for(let i=0; i<slowEnemies.length; i++) {
+                        let e = slowEnemies[i];
+                        if(e.x < left || e.x > right) {
+                            slowEnemies.splice(i,1);
+                            i--;
+                        }
+                    }
+                    for(let i=0; i<bulletEnemies.length; i++) {
+                        let b = bulletEnemies[i];
+                        if(b.x < left || b.x > right) {
+                            bulletEnemies.splice(i,1);
+                            i--;
+                        }
+                    }
+                    extinctionEvent.active = false;
+                    extinctionEvent.phase = 0;
+                    extinctionCount++;
+                    updateUI();
+                }
+            }
+        }
+
+        // LASER MÓVIL (Lamov — del Metro): carga pegado a un lado random y cruza horizontal
+        function spawnMovingLaser() {
+            let fromLeft = Math.random() < 0.5;
+            movingLasers.push({
+                x: fromLeft ? 0 : canvas.width,
+                fromLeft: fromLeft,
+                charge: MOVING_LASER_WARMUP,
+                speed: 3.2 + Math.random() * 0.8,
+                colorIdx: Math.floor(Math.random() * 3)
+            });
+        }
+
+        function updateMovingLasers() {
+            for(let i=0; i<movingLasers.length; i++) {
+                let l = movingLasers[i];
+                if(l.charge > 0) {
+                    l.charge--;
+                } else {
+                    l.x += l.fromLeft ? l.speed : -l.speed;
+
+                    if(player.invincible === 0 && !gameOver && Math.abs(player.x - l.x) < (player.size/2 + MOVING_LASER_HIT_HALFWIDTH)) {
+                        damagePlayer();
+                    }
+
+                    if(l.x < -20 || l.x > canvas.width + 20) {
+                        movingLasers.splice(i, 1);
+                        i--;
+                    }
+                }
+            }
+        }
+
+        // REBOTONES (Pepes — del Metro): acá no hay puertas ni paradas, así que solo rebotan tipo
+        // pong por el mapa hasta que se cumple su tiempo secreto interno (7 a 12s), momento en el
+        // que salen calmados por el borde más cercano y desaparecen.
+        function spawnSingleBouncer() {
+            let side = Math.floor(Math.random() * 4);
+            let x, y, vx, vy;
+            if(side === 0) { x = Math.random() * canvas.width; y = -20; vx = (Math.random()-0.5)*BOUNCER_SPEED; vy = BOUNCER_SPEED; }
+            else if(side === 1) { x = canvas.width + 20; y = Math.random() * canvas.height; vx = -BOUNCER_SPEED; vy = (Math.random()-0.5)*BOUNCER_SPEED; }
+            else if(side === 2) { x = Math.random() * canvas.width; y = canvas.height + 20; vx = (Math.random()-0.5)*BOUNCER_SPEED; vy = -BOUNCER_SPEED; }
+            else { x = -20; y = Math.random() * canvas.height; vx = BOUNCER_SPEED; vy = (Math.random()-0.5)*BOUNCER_SPEED; }
+
+            let len = Math.hypot(vx, vy);
+            vx = (vx/len) * BOUNCER_SPEED;
+            vy = (vy/len) * BOUNCER_SPEED;
+
+            bouncers.push({
+                x: x, y: y, size: BOUNCER_SIZE,
+                vx: vx, vy: vy,
+                life: BOUNCER_LIFE_MIN + Math.floor(Math.random() * (BOUNCER_LIFE_MAX - BOUNCER_LIFE_MIN + 1)),
+                leaving: false
+            });
+        }
+
+        function updateBouncers() {
+            for(let i=0; i<bouncers.length; i++) {
+                let bo = bouncers[i];
+
+                if(!bo.leaving) {
+                    bo.life--;
+                    if(bo.life <= 0) {
+                        // Se cumplió su tiempo secreto: sale calmado por el borde más cercano
+                        bo.leaving = true;
+                        const distTop = bo.y, distBottom = canvas.height - bo.y;
+                        const distLeft = bo.x, distRight = canvas.width - bo.x;
+                        const minDist = Math.min(distTop, distBottom, distLeft, distRight);
+                        if(minDist === distTop) { bo.vx = 0; bo.vy = -BOUNCER_LEAVE_SPEED; }
+                        else if(minDist === distBottom) { bo.vx = 0; bo.vy = BOUNCER_LEAVE_SPEED; }
+                        else if(minDist === distLeft) { bo.vx = -BOUNCER_LEAVE_SPEED; bo.vy = 0; }
+                        else { bo.vx = BOUNCER_LEAVE_SPEED; bo.vy = 0; }
+                    }
+                }
+
+                if(bo.leaving) {
+                    bo.x += bo.vx;
+                    bo.y += bo.vy;
+                    if(bo.x < -bo.size || bo.x > canvas.width + bo.size || bo.y < -bo.size || bo.y > canvas.height + bo.size) {
+                        bouncers.splice(i, 1);
+                        i--;
+                        continue;
+                    }
+                } else {
+                    bo.x += bo.vx;
+                    bo.y += bo.vy;
+                    if(bo.x - bo.size/2 < 0) { bo.x = bo.size/2; bo.vx = Math.abs(bo.vx); }
+                    if(bo.x + bo.size/2 > canvas.width) { bo.x = canvas.width - bo.size/2; bo.vx = -Math.abs(bo.vx); }
+                    if(bo.y - bo.size/2 < 0) { bo.y = bo.size/2; bo.vy = Math.abs(bo.vy); }
+                    if(bo.y + bo.size/2 > canvas.height) { bo.y = canvas.height - bo.size/2; bo.vy = -Math.abs(bo.vy); }
+                }
+
+                if(player.invincible === 0 && !gameOver && Math.hypot(player.x - bo.x, player.y - bo.y) < (player.size/2 + bo.size/2)) {
+                    damagePlayer();
+                }
+            }
+        }
+
+        // ---------- ASTEROIDE (Rock, del Squasteroids) ----------
+        function generateAsteroidPoints(radius) {
+            const vertexCount = randInt(9, 14);
+            const points = [];
+            for(let i=0; i<vertexCount; i++) {
+                const angle = (i / vertexCount) * Math.PI * 2;
+                const r = radius * (0.72 + Math.random() * 0.34); // irregularidad tipo roca
+                points.push({ angle, r });
+            }
+            return points;
+        }
+
+        function createAsteroid(x, y, tier, vx, vy) {
+            let radius;
+            if(tier === 1) radius = randRange(ASTEROID_TIER1_RADIUS_MIN, ASTEROID_TIER1_RADIUS_MAX);
+            else if(tier === 2) radius = randRange(ASTEROID_TIER2_RADIUS_MIN, ASTEROID_TIER2_RADIUS_MAX);
+            else radius = randRange(ASTEROID_TIER3_RADIUS_MIN, ASTEROID_TIER3_RADIUS_MAX);
+
+            return {
+                x: clamp(x, radius, canvas.width - radius),
+                y: clamp(y, radius, canvas.height - radius),
+                radius: radius,
+                tier: tier,
+                points: generateAsteroidPoints(radius),
+                rotation: Math.random() * Math.PI * 2,
+                rotSpeed: (Math.random() - 0.5) * 0.01,
+                vx: vx || 0, vy: vy || 0
+            };
+        }
+
+        // PRACTICE MODE: un solo asteroide grande (sin el anillo de lentos del modo real),
+        // algo lejos del jugador pero dentro del canvas, y ya en movimiento — por eso puede
+        // llegar a chocar (rebotar) contra los bordes del canvas.
+        function spawnSingleRock() {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = randRange(ROCK_SPAWN_DIST_MIN, ROCK_SPAWN_DIST_MAX);
+            const x = player.x + Math.cos(angle) * distance;
+            const y = player.y + Math.sin(angle) * distance;
+
+            const moveAngle = Math.random() * Math.PI * 2;
+            const speed = randRange(ROCK_SPEED_MIN, ROCK_SPEED_MAX);
+            const vx = Math.cos(moveAngle) * speed;
+            const vy = Math.sin(moveAngle) * speed;
+
+            asteroids.push(createAsteroid(x, y, 1, vx, vy));
+        }
+
+        // Genera los segmentos del borde del asteroide como escombros flotantes que se desvanecen
+        function spawnAsteroidDebris(a) {
+            const n = a.points.length;
+            for(let i=0; i<n; i++) {
+                const p1a = a.points[i];
+                const p2a = a.points[(i+1) % n];
+                const x1 = Math.cos(p1a.angle) * p1a.r;
+                const y1 = Math.sin(p1a.angle) * p1a.r;
+                const x2 = Math.cos(p2a.angle) * p2a.r;
+                const y2 = Math.sin(p2a.angle) * p2a.r;
+                const midAngle = Math.atan2((y1+y2)/2, (x1+x2)/2) + a.rotation;
+                const speed = 0.7 + Math.random() * 1.3;
+                asteroidDebris.push({
+                    x: a.x, y: a.y,
+                    p1x: x1, p1y: y1, p2x: x2, p2y: y2,
+                    vx: Math.cos(midAngle) * speed, vy: Math.sin(midAngle) * speed,
+                    rotation: a.rotation,
+                    rotSpeed: (Math.random() - 0.5) * 0.09,
+                    life: DEBRIS_LIFE, maxLife: DEBRIS_LIFE
+                });
+            }
+        }
+
+        // Rompe un asteroide en pedazos más chicos (tier 1 -> 2 -> 3 -> desintegrado).
+        // Un ROJO rompe cualquier tier al atravesarlo (y sigue de largo, sin morir); el DASH
+        // del jugador solo rompe tier 2 y 3 — el grande (tier 1) solo lo rompe un rojo,
+        // igual que en Squasteroids. Solo cuando lo rompe el JUGADOR se suman 15 puntos.
+        function breakAsteroid(index, byPlayer) {
+            const a = asteroids[index];
+            asteroids.splice(index, 1);
+
+            if(a.tier === 1) {
+                const pieces = randInt(3, 5);
+                for(let i=0; i<pieces; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = a.radius * 0.3;
+                    const speed = 0.4 + Math.random() * 0.5;
+                    asteroids.push(createAsteroid(a.x + Math.cos(angle)*dist, a.y + Math.sin(angle)*dist, 2, Math.cos(angle)*speed, Math.sin(angle)*speed));
+                }
+            } else if(a.tier === 2) {
+                const pieces = randInt(2, 4);
+                for(let i=0; i<pieces; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = a.radius * 0.3;
+                    const speed = 0.6 + Math.random() * 0.7;
+                    asteroids.push(createAsteroid(a.x + Math.cos(angle)*dist, a.y + Math.sin(angle)*dist, 3, Math.cos(angle)*speed, Math.sin(angle)*speed));
+                }
+            } else {
+                // tier 3: no deja pedazos nuevos, se desintegra en segmentos de borde que flotan y se desvanecen
+                spawnAsteroidDebris(a);
+            }
+
+            if(byPlayer) addScore(15);
+        }
+
+        function updateAsteroidDebris() {
+            for(let i=0; i<asteroidDebris.length; i++) {
+                const d = asteroidDebris[i];
+                d.x += d.vx;
+                d.y += d.vy;
+                d.rotation += d.rotSpeed;
+                d.life--;
+                if(d.life <= 0) {
+                    asteroidDebris.splice(i, 1);
+                    i--;
+                }
+            }
+        }
+
+        function updateAsteroids() {
+            for(let i=0; i<asteroids.length; i++) {
+                const a = asteroids[i];
+                a.x += a.vx;
+                a.y += a.vy;
+                a.rotation += a.rotSpeed;
+
+                // Acá no hay mundo toroidal como en Squasteroids: rebota contra los bordes del canvas
+                if(a.x - a.radius < 0) { a.x = a.radius; a.vx = Math.abs(a.vx); }
+                if(a.x + a.radius > canvas.width) { a.x = canvas.width - a.radius; a.vx = -Math.abs(a.vx); }
+                if(a.y - a.radius < 0) { a.y = a.radius; a.vy = Math.abs(a.vy); }
+                if(a.y + a.radius > canvas.height) { a.y = canvas.height - a.radius; a.vy = -Math.abs(a.vy); }
+
+                if(player.invincible === 0 && !gameOver && Math.hypot(player.x - a.x, player.y - a.y) < (player.size/2 + a.radius*0.75)) {
+                    damagePlayer();
+                }
+            }
+        }
+
+        // ---------- BERSERKER (Brskr, del Squasteroids) ----------
+        function spawnSingleBerserker() {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = randRange(BERSERKER_SPAWN_DIST_MIN, BERSERKER_SPAWN_DIST_MAX);
+            let x = player.x + Math.cos(angle) * distance;
+            let y = player.y + Math.sin(angle) * distance;
+            x = clamp(x, BERSERKER_SIZE, canvas.width - BERSERKER_SIZE);
+            y = clamp(y, BERSERKER_SIZE, canvas.height - BERSERKER_SIZE);
+
+            const particleCount = randInt(BERSERKER_SPAWN_PARTICLES_MIN, BERSERKER_SPAWN_PARTICLES_MAX);
+            const spawnParticles = [];
+            for(let i=0; i<particleCount; i++) {
+                spawnParticles.push({
+                    angle: Math.random() * Math.PI * 2,
+                    dist: BERSERKER_SPAWN_RADIUS * (0.55 + Math.random() * 0.55)
+                });
+            }
+
+            berserkers.push({
+                x, y, size: BERSERKER_SIZE,
+                vx: 0, vy: 0,
+                hp: BERSERKER_MAX_HP,
+                rotation: Math.random() * Math.PI * 2,
+                blinkTimer: 0,
+                spawnTimer: BERSERKER_MATERIALIZE_DURATION,
+                spawnParticles
+            });
+        }
+
+        // Golpe del berserker contra el jugador: quita 2 de vida, lo empuja con fuerza en la
+        // dirección en la que iba el berserker, y el berserker rebota con el choque.
+        function berserkerHitPlayer(b) {
+            if(player.invincible > 0 || gameOver) return;
+            hp -= 2;
+            Cosmetics.onPlayerHit(player.x, player.y); // skin-hit-rings: sueltan anillos si está equipada
+            triggerDamageFlash();
+            if(hp <= 0) {
+                hp = 0;
+                gameOver = true;
+                updateUI();
+                stopMusic();
+                menuBtn.classList.remove('hidden');
+            } else {
+                updateUI();
+                player.invincible = 20;
+            }
+
+            const speed = Math.hypot(b.vx, b.vy);
+            if(speed > 0.01) {
+                player.pushVx = (player.pushVx || 0) + (b.vx / speed) * BERSERKER_PLAYER_PUSH;
+                player.pushVy = (player.pushVy || 0) + (b.vy / speed) * BERSERKER_PLAYER_PUSH;
+            }
+
+            b.vx *= -BERSERKER_BOUNCE_FACTOR;
+            b.vy *= -BERSERKER_BOUNCE_FACTOR;
+        }
+
+        function updateBerserkers() {
+            for(let i=0; i<berserkers.length; i++) {
+                const b = berserkers[i];
+                b.blinkTimer++;
+
+                // Gira sobre su propio eje: mientras menos vidas tiene, más rápido gira
+                const rotSpeed = 0.28 + (BERSERKER_MAX_HP - b.hp) * 0.14;
+                b.rotation += rotSpeed;
+
+                if(b.spawnTimer > 0) {
+                    b.spawnTimer--; // sigue apareciendo: no se mueve ni colisiona todavía
+                    continue;
+                }
+
+                // Acelera constantemente hacia el jugador (misil térmico)
+                const dx = player.x - b.x;
+                const dy = player.y - b.y;
+                const dist = Math.hypot(dx, dy);
+                if(dist > 0.01) {
+                    const dirX = dx / dist;
+                    const dirY = dy / dist;
+                    b.vx += dirX * BERSERKER_ACCEL;
+                    b.vy += dirY * BERSERKER_ACCEL;
+                    const spd = Math.hypot(b.vx, b.vy);
+                    if(spd > BERSERKER_MAX_SPEED) {
+                        b.vx = (b.vx / spd) * BERSERKER_MAX_SPEED;
+                        b.vy = (b.vy / spd) * BERSERKER_MAX_SPEED;
+                    }
+                }
+
+                b.x += b.vx;
+                b.y += b.vy;
+
+                // Rebota contra los bordes del canvas (igual que el asteroide y los rebotones):
+                // con tanta aceleración constante hacia el jugador, si se le permitiera salir
+                // de pantalla terminaba orbitando varias vueltas antes de conectar el golpe.
+                const half = b.size/2;
+                if(b.x - half < 0) { b.x = half; b.vx = Math.abs(b.vx); }
+                if(b.x + half > canvas.width) { b.x = canvas.width - half; b.vx = -Math.abs(b.vx); }
+                if(b.y - half < 0) { b.y = half; b.vy = Math.abs(b.vy); }
+                if(b.y + half > canvas.height) { b.y = canvas.height - half; b.vy = -Math.abs(b.vy); }
+
+                // Rompe cualquier asteroide que toque a su paso, sin frenarse
+                for(let j=0; j<asteroids.length; j++) {
+                    const a = asteroids[j];
+                    if(Math.hypot(b.x - a.x, b.y - a.y) < a.radius * 0.8) {
+                        breakAsteroid(j, false);
+                        break;
+                    }
+                }
+
+                // Mata enemigos lentos a su paso
+                for(let j=0; j<slowEnemies.length; j++) {
+                    const e = slowEnemies[j];
+                    if(Math.hypot(b.x - e.x, b.y - e.y) < (e.size/2 + b.size/2)) {
+                        slowEnemies.splice(j, 1);
+                        break;
+                    }
+                }
+
+                // Choque con un rojo a toda velocidad: el rojo muere, el berserker pierde una vida
+                for(let j=0; j<bulletEnemies.length; j++) {
+                    const r = bulletEnemies[j];
+                    if(r.state !== 'shooting') continue;
+                    if(Math.hypot(b.x - r.x, b.y - r.y) < (b.size/2 + r.size/2)) {
+                        bulletEnemies.splice(j, 1);
+                        b.hp--;
+                        playBerserkerHitSound();
+                        b.vx *= BERSERKER_RED_BRAKE;
+                        b.vy *= BERSERKER_RED_BRAKE;
+                        break;
+                    }
+                }
+
+                if(b.hp <= 0) {
+                    berserkers.splice(i, 1);
+                    i--;
+                    continue;
+                }
+
+                // Choque con el jugador
+                if(player.invincible === 0 && !gameOver && Math.hypot(player.x - b.x, player.y - b.y) < (player.size/2 + b.size/2)) {
+                    berserkerHitPlayer(b);
+                }
+            }
+        }
+        
+        function updateShadowEvent() {
+            if(!shadowEvent.active) return;
+            
+            if(shadowEvent.phase === 1) {
+                shadowEvent.safeZone.x += shadowEvent.safeZone.vx;
+                shadowEvent.safeZone.y += shadowEvent.safeZone.vy;
+                if(shadowEvent.safeZone.x - shadowEvent.safeZone.radius < 0) shadowEvent.safeZone.vx = Math.abs(shadowEvent.safeZone.vx);
+                if(shadowEvent.safeZone.x + shadowEvent.safeZone.radius > canvas.width) shadowEvent.safeZone.vx = -Math.abs(shadowEvent.safeZone.vx);
+                if(shadowEvent.safeZone.y - shadowEvent.safeZone.radius < 0) shadowEvent.safeZone.vy = Math.abs(shadowEvent.safeZone.vy);
+                if(shadowEvent.safeZone.y + shadowEvent.safeZone.radius > canvas.height) shadowEvent.safeZone.vy = -Math.abs(shadowEvent.safeZone.vy);
+                
+                shadowEvent.timer--;
+                if(shadowEvent.timer <= 0) {
+                    shadowEvent.phase = 2;
+                    let distToSafe = Math.hypot(player.x - shadowEvent.safeZone.x, player.y - shadowEvent.safeZone.y);
+                    if(distToSafe > shadowEvent.safeZone.radius) {
+                        damagePlayer();
+                    } else {
+                        addScore(100);
+                    }
+                    for(let i=0; i<slowEnemies.length; i++) {
+                        let e = slowEnemies[i];
+                        let dist = Math.hypot(e.x - shadowEvent.safeZone.x, e.y - shadowEvent.safeZone.y);
+                        if(dist > shadowEvent.safeZone.radius) {
+                            slowEnemies.splice(i,1);
+                            i--;
+                        }
+                    }
+                    for(let i=0; i<bulletEnemies.length; i++) {
+                        let b = bulletEnemies[i];
+                        let dist = Math.hypot(b.x - shadowEvent.safeZone.x, b.y - shadowEvent.safeZone.y);
+                        if(dist > shadowEvent.safeZone.radius) {
+                            bulletEnemies.splice(i,1);
+                            i--;
+                        }
+                    }
+                    shadowEvent.active = false;
+                    shadowEvent.phase = 0;
+                    extinctionCount++;
+                    updateUI();
+                }
+            }
+        }
+        
+        // Movimiento del jugador
+        function updatePlayerMovement() {
+            let speed = 4.8;
+            let dx = 0, dy = 0;
+            if(move.up) dy -= 1;
+            if(move.down) dy += 1;
+            if(move.left) dx -= 1;
+            if(move.right) dx += 1;
+
+            if(joystick.active && (joystick.dx !== 0 || joystick.dy !== 0)) {
+                // Movimiento analógico del joystick táctil (respeta magnitud parcial)
+                dx = joystick.dx;
+                dy = joystick.dy;
+                let len = Math.hypot(dx, dy);
+                if(len > 1) { dx /= len; dy /= len; }
+                player.x += dx * speed;
+                player.y += dy * speed;
+            } else if(dx !== 0 || dy !== 0) {
+                let len = Math.hypot(dx, dy);
+                dx /= len;
+                dy /= len;
+                player.x += dx * speed;
+                player.y += dy * speed;
+            }
+
+            // Empujón recibido al ser golpeado por un berserker: se disipa solo con fricción,
+            // se siente como un golpe real en vez de un salto brusco de posición.
+            if(player.pushVx || player.pushVy) {
+                player.x += player.pushVx;
+                player.y += player.pushVy;
+                player.pushVx *= BERSERKER_PUSH_FRICTION;
+                player.pushVy *= BERSERKER_PUSH_FRICTION;
+                if(Math.abs(player.pushVx) < 0.05) player.pushVx = 0;
+                if(Math.abs(player.pushVy) < 0.05) player.pushVy = 0;
+            }
+            
+            player.x = clamp(player.x, player.size/2, canvas.width - player.size/2);
+            player.y = clamp(player.y, player.size/2, canvas.height - player.size/2);
+        }
+        
+        // Función para verificar si un punto está cerca de un segmento (para el laser de dash)
+        function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+            const ax = px - x1;
+            const ay = py - y1;
+            const bx = x2 - x1;
+            const by = y2 - y1;
+            const dot = ax * bx + ay * by;
+            const len2 = bx * bx + by * by;
+            if (len2 === 0) return Math.hypot(px - x1, py - y1);
+            let t = dot / len2;
+            t = Math.max(0, Math.min(1, t));
+            const closestX = x1 + t * bx;
+            const closestY = y1 + t * by;
+            return Math.hypot(px - closestX, py - closestY);
+        }
+        
+        // DASH con laser y muerte de enemigos atravesados
+        function performDash(dirX, dirY) {
+            if(dashCooldown > 0 || gameOver || paused) return;
+            if(dirX === 0 && dirY === 0) return;
+            let len = Math.hypot(dirX, dirY);
+            dirX /= len;
+            dirY /= len;
+            
+            let dashDistance = DASH_SHORT;
+            
+            const startX = player.x;
+            const startY = player.y;
+            const endX = clamp(player.x + dirX * dashDistance, player.size/2, canvas.width - player.size/2);
+            const endY = clamp(player.y + dirY * dashDistance, player.size/2, canvas.height - player.size/2);
+            
+            // ACTIVAR EL LASER DE DASH (destello)
+            dashTrail.active = true;
+            dashTrail.x1 = startX;
+            dashTrail.y1 = startY;
+            dashTrail.x2 = endX;
+            dashTrail.y2 = endY;
+            dashTrail.timer = DASH_TRAIL_DURATION;
+            Cosmetics.triggerDashBorderGlow(PRACTICE_DASH_COLOR); // skin-border-glow: aura en los bordes si está equipada
+            
+            // MATAR ENEMIGOS QUE EL LASER ATRAVIESA
+            // Enemigos lentos
+            for(let i=0; i<slowEnemies.length; i++) {
+                let e = slowEnemies[i];
+                let distToLaser = pointToSegmentDistance(e.x, e.y, startX, startY, endX, endY);
+                if(distToLaser < e.size/2 + 8) {
+                    let enemyX = e.x, enemyY = e.y;
+                    slowEnemies.splice(i,1);
+                    killEnemy(null, true, enemyX, enemyY);
+                    i--;
+                }
+            }
+            
+            // Enemigos rápidos (proyectiles)
+            for(let i=0; i<bulletEnemies.length; i++) {
+                let b = bulletEnemies[i];
+                let distToLaser = pointToSegmentDistance(b.x, b.y, startX, startY, endX, endY);
+                if(distToLaser < b.size/2 + 3) {
+                    let enemyX = b.x, enemyY = b.y;
+                    bulletEnemies.splice(i,1);
+                    killEnemy(null, true, enemyX, enemyY);
+                    i--;
+                }
+            }
+            
+            // Rebotones (Pepes): son inmortales, el dash no los mata — solo los asusta y cambian de
+            // dirección (huyen en diagonal, contrario a donde está el jugador respecto a ellos).
+            // Los que ya van saliendo por su tiempo cumplido no se ven afectados.
+            for(let i=0; i<bouncers.length; i++) {
+                let bo = bouncers[i];
+                if(bo.leaving) continue;
+                let distToLaser = pointToSegmentDistance(bo.x, bo.y, startX, startY, endX, endY);
+                if(distToLaser < bo.size/2 + 8) {
+                    let dx = bo.x - player.x;
+                    let dy = bo.y - player.y;
+                    let dist = Math.hypot(dx, dy);
+                    if(dist > 0.01) {
+                        bo.vx = (dx / dist) * BOUNCER_SPEED;
+                        bo.vy = (dy / dist) * BOUNCER_SPEED;
+                    }
+                }
+            }
+            
+            // Rompe pedazos de asteroide (tier 2 y 3) que el dash atraviesa; el grande
+            // (tier 1) solo lo rompe un rojo, igual que en Squasteroids.
+            for(let i=0; i<asteroids.length; i++) {
+                const a = asteroids[i];
+                if(a.tier === 1) continue;
+                const distToLaser = pointToSegmentDistance(a.x, a.y, startX, startY, endX, endY);
+                if(distToLaser < a.radius + 8) {
+                    breakAsteroid(i, true);
+                    i--;
+                }
+            }
+
+            // Atraviesa berserkers: se frenan bastante y pierden una vida. Si esa vida era
+            // la última, se destruyen y dejan cajita de vida verde.
+            for(let i=0; i<berserkers.length; i++) {
+                const b = berserkers[i];
+                if(b.spawnTimer > 0) continue;
+                const distToLaser = pointToSegmentDistance(b.x, b.y, startX, startY, endX, endY);
+                if(distToLaser < b.size/2 + 8) {
+                    b.vx = -dirX * BERSERKER_DASH_KNOCKBACK + b.vx * BERSERKER_DASH_BRAKE;
+                    b.vy = -dirY * BERSERKER_DASH_KNOCKBACK + b.vy * BERSERKER_DASH_BRAKE;
+                    b.hp--;
+                    playBerserkerHitSound();
+                    if(b.hp <= 0) {
+                        const bx = b.x, by = b.y;
+                        berserkers.splice(i, 1);
+                        i--;
+                        addScore(120);
+                        spawnHealthItem(bx, by);
+                    }
+                }
+            }
+            
+            // Mover al jugador
+            player.x = endX;
+            player.y = endY;
+            
+            dashCooldown = DASH_COOLDOWN_MAX;
+            player.invincible = 8;
+        }
+        
+        // Actualizar items de curación
+        function updateHealthItems() {
+            for(let i=0; i<healthItems.length; i++) {
+                let item = healthItems[i];
+                item.timer--;
+                if(item.timer <= 0) {
+                    healthItems.splice(i,1);
+                    i--;
+                    continue;
+                }
+                // Colisión con jugador
+                let dist = Math.hypot(player.x - item.x, player.y - item.y);
+                if(dist < player.size/2 + item.size/2) {
+                    healPlayer();
+                    healthItems.splice(i,1);
+                    i--;
+                }
+            }
+        }
+        
+        // Actualizar dash trail
+        function updateDashTrail() {
+            if(dashTrail.active) {
+                dashTrail.timer--;
+                if(dashTrail.timer <= 0) {
+                    dashTrail.active = false;
+                }
+            }
+        }
+        
+        
+        // Enemigos lentos
+        function updateSlowEnemies() {
+            for(let i=0; i<slowEnemies.length; i++) {
+                let e = slowEnemies[i];
+                let dx = player.x - e.x;
+                let dy = player.y - e.y;
+                let dist = Math.hypot(dx, dy);
+                if(dist > 0.01) {
+                    let dirX = dx / dist;
+                    let dirY = dy / dist;
+                    e.vx += dirX * 0.1;
+                    e.vy += dirY * 0.1;
+                    let spd = Math.hypot(e.vx, e.vy);
+                    if(spd > e.maxSpeed) {
+                        e.vx = (e.vx / spd) * e.maxSpeed;
+                        e.vy = (e.vy / spd) * e.maxSpeed;
+                    }
+                }
+                e.x += e.vx;
+                e.y += e.vy;
+                
+                if(e.x + e.size/2 < -50 || e.x - e.size/2 > canvas.width+50 || 
+                   e.y + e.size/2 < -50 || e.y - e.size/2 > canvas.height+50) {
+                    slowEnemies.splice(i,1);
+                    i--;
+                    continue;
+                }
+                
+                if(player.invincible === 0 && !gameOver && Math.hypot(player.x - e.x, player.y - e.y) < (player.size/2 + e.size/2)) {
+                    damagePlayer();
+                }
+            }
+        }
+        
+        // Proyectiles rápidos
+        function updateBulletEnemies() {
+            for(let i=0; i<bulletEnemies.length; i++) {
+                let b = bulletEnemies[i];
+                if(b.state === 'aiming') {
+                    b.aimTimer--;
+                    b.targetX = player.x;
+                    b.targetY = player.y;
+                    if(b.aimTimer <= 0) {
+                        b.state = 'shooting';
+                        let dx = player.x - b.x;
+                        let dy = player.y - b.y;
+                        let dist = Math.hypot(dx, dy);
+                        if(dist > 0.01) {
+                            let spd = 16;
+                            b.vx = (dx / dist) * spd;
+                            b.vy = (dy / dist) * spd;
+                        }
+                    }
+                } else {
+                    b.x += b.vx;
+                    b.y += b.vy;
+                    if(b.x + 50 < 0 || b.x - 50 > canvas.width || b.y + 50 < 0 || b.y - 50 > canvas.height) {
+                        bulletEnemies.splice(i,1);
+                        i--;
+                        continue;
+                    }
+
+                    // Rompe cualquier asteroide (grande, mediano o chico) al atravesarlo,
+                    // pero sigue de largo (no se destruye), igual que en Squasteroids
+                    for(let j=0; j<asteroids.length; j++) {
+                        const a = asteroids[j];
+                        if(Math.hypot(b.x - a.x, b.y - a.y) < a.radius * 0.8) {
+                            breakAsteroid(j, false);
+                            break;
+                        }
+                    }
+
+                    if(player.invincible === 0 && !gameOver && Math.hypot(player.x - b.x, player.y - b.y) < (player.size/2 + b.size/2)) {
+                        damagePlayer();
+                        bulletEnemies.splice(i,1);
+                        i--;
+                    }
+                }
+            }
+        }
+        
+        // Lasers
+        function updateLasers() {
+            for(let i=0; i<lasers.length; i++) {
+                let l = lasers[i];
+                if(l.charge > 0) {
+                    l.charge--;
+                } else {
+                    l.lifetime--;
+                    if(l.lifetime <= 0) {
+                        lasers.splice(i,1);
+                        i--;
+                        continue;
+                    }
+                    let closest = closestPointOnSegment(player.x, player.y, l.x1, l.y1, l.x2, l.y2);
+                    let dist = Math.hypot(player.x - closest.x, player.y - closest.y);
+                    if(dist < player.size/2 + 5 && player.invincible === 0 && !gameOver) {
+                        damagePlayer();
+                    }
+                }
+            }
+        }
+        
+        function closestPointOnSegment(px, py, x1, y1, x2, y2) {
+            let ax = px - x1, ay = py - y1;
+            let bx = x2 - x1, by = y2 - y1;
+            let dot = ax * bx + ay * by;
+            let len2 = bx * bx + by * by;
+            if(len2 === 0) return {x: x1, y: y1};
+            let t = dot / len2;
+            t = Math.max(0, Math.min(1, t));
+            return {x: x1 + t * bx, y: y1 + t * by};
+        }
+        
+        // Spawners (en Practice Mode NO hay spawns automáticos: todo se invoca manualmente
+        // con los botones del panel lateral)
+        function updateSpawners() {
+            // Intencionalmente vacío en Practice Mode
+        }
+        
+        // ---------- DIBUJADO DE ASTEROIDES Y BERSERKER ----------
+        function drawAsteroidDebris() {
+            for(let d of asteroidDebris) {
+                const alpha = d.life / d.maxLife;
+                ctx.save();
+                ctx.translate(d.x, d.y);
+                ctx.rotate(d.rotation);
+                ctx.globalAlpha = alpha;
+                ctx.beginPath();
+                ctx.moveTo(d.p1x, d.p1y);
+                ctx.lineTo(d.p2x, d.p2y);
+                ctx.strokeStyle = "#c98dff";
+                ctx.lineWidth = 2.5;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = "#a64dff";
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+        }
+
+        function drawAsteroids() {
+            for(let a of asteroids) {
+                ctx.save();
+                ctx.translate(a.x, a.y);
+                ctx.rotate(a.rotation);
+                ctx.beginPath();
+                for(let i=0; i<a.points.length; i++) {
+                    const pt = a.points[i];
+                    const px = Math.cos(pt.angle) * pt.r;
+                    const py = Math.sin(pt.angle) * pt.r;
+                    if(i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.fillStyle = "#241a33";
+                ctx.strokeStyle = "#c98dff";
+                ctx.lineWidth = 2.5;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = "#a64dff";
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+            ctx.shadowBlur = 0;
+        }
+
+        // Colores del berserker: cuerpo naranja-rojizo que se va poniendo más rojo y parpadea
+        // más rápido mientras menos vidas le quedan.
+        const BERSERKER_BASE_COLOR = { r: 255, g: 95, b: 40 };
+        const BERSERKER_BLINK_COLOR = { r: 255, g: 15, b: 15 };
+
+        function drawBerserkers() {
+            for(let b of berserkers) {
+                if(b.spawnTimer > 0) {
+                    // Aparición gradual y épica: la zona se ilumina y partículas convergen al centro
+                    const progress = 1 - (b.spawnTimer / BERSERKER_MATERIALIZE_DURATION);
+                    const glowR = 55 + 45 * (1 - progress);
+                    const grad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, glowR);
+                    grad.addColorStop(0, `rgba(255,100,40,${0.4 * progress})`);
+                    grad.addColorStop(1, 'rgba(255,100,40,0)');
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, glowR, 0, Math.PI*2);
+                    ctx.fill();
+
+                    ctx.shadowBlur = 6;
+                    ctx.shadowColor = "#ff5522";
+                    for(let part of b.spawnParticles) {
+                        const curDist = part.dist * (1 - progress);
+                        const px = b.x + Math.cos(part.angle) * curDist;
+                        const py = b.y + Math.sin(part.angle) * curDist;
+                        ctx.beginPath();
+                        ctx.fillStyle = `rgba(255,160,70,${0.25 + 0.65 * progress})`;
+                        ctx.arc(px, py, 2 + 1.5 * progress, 0, Math.PI*2);
+                        ctx.fill();
+                    }
+                    ctx.shadowBlur = 0;
+                    continue;
+                }
+
+                // Parpadeo rojo: la frecuencia aumenta mientras menos vidas tiene
+                const blinkSpeed = 0.05 + (BERSERKER_MAX_HP - b.hp) * 0.06;
+                const blink = 0.5 + 0.5 * Math.sin(b.blinkTimer * blinkSpeed);
+                const cr = Math.round(BERSERKER_BASE_COLOR.r + (BERSERKER_BLINK_COLOR.r - BERSERKER_BASE_COLOR.r) * blink);
+                const cg = Math.round(BERSERKER_BASE_COLOR.g + (BERSERKER_BLINK_COLOR.g - BERSERKER_BASE_COLOR.g) * blink);
+                const cb = Math.round(BERSERKER_BASE_COLOR.b + (BERSERKER_BLINK_COLOR.b - BERSERKER_BASE_COLOR.b) * blink);
+
+                ctx.save();
+                ctx.translate(b.x, b.y);
+                ctx.rotate(b.rotation);
+                ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
+                ctx.shadowBlur = 10 + 8 * blink;
+                ctx.shadowColor = "#ff3300";
+                // Cuerpo tipo rombo/púa, para distinguirlo de los cuadrados de lentos/rojos
+                ctx.beginPath();
+                ctx.moveTo(0, -b.size/2);
+                ctx.lineTo(b.size/2, 0);
+                ctx.lineTo(0, b.size/2);
+                ctx.lineTo(-b.size/2, 0);
+                ctx.closePath();
+                ctx.fill();
+                // Núcleo interior brillante
+                ctx.fillStyle = `rgba(255,255,${180 + Math.round(50 * blink)},0.9)`;
+                ctx.beginPath();
+                ctx.arc(0, 0, b.size/5, 0, Math.PI*2);
+                ctx.fill();
+                ctx.restore();
+            }
+            ctx.shadowBlur = 0;
+        }
+
+        // DIBUJADO
+        function draw() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            
+            let gradient = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+            gradient.addColorStop(0, "#0a0a2a");
+            gradient.addColorStop(1, "#1a0a2a");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+
+            // TEXTO DE FONDO (Complejo.Texto) — va detrás de todo lo demás
+            drawCanvasTextOverlay();
+            
+            // SOMBRA GLOBAL
+            if(shadowEvent.active && shadowEvent.phase === 1) {
+                ctx.fillStyle = "rgba(0,0,0,0.85)";
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+                ctx.beginPath();
+                ctx.arc(shadowEvent.safeZone.x, shadowEvent.safeZone.y, shadowEvent.safeZone.radius, 0, Math.PI*2);
+                ctx.fillStyle = "rgba(255,255,200,0.4)";
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(shadowEvent.safeZone.x, shadowEvent.safeZone.y, shadowEvent.safeZone.radius-5, 0, Math.PI*2);
+                ctx.strokeStyle = "yellow";
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                ctx.fillStyle = "white";
+                ctx.font = "bold 16px monospace";
+                ctx.fillText("ZONA SEGURA", shadowEvent.safeZone.x-55, shadowEvent.safeZone.y-60);
+            }
+
+            // BANDA DE EXTINCIÓN (Banex)
+            if(extinctionEvent.active && extinctionEvent.phase === 1) {
+                ctx.fillStyle = "rgba(0,0,0,0.85)";
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+                const half = extinctionEvent.bandWidth/2;
+                ctx.fillStyle = "rgba(255,255,200,0.4)";
+                ctx.fillRect(extinctionEvent.x - half, 0, extinctionEvent.bandWidth, canvas.height);
+                ctx.strokeStyle = "yellow";
+                ctx.lineWidth = 4;
+                ctx.strokeRect(extinctionEvent.x - half + 2, 2, extinctionEvent.bandWidth - 4, canvas.height - 4);
+                ctx.fillStyle = "white";
+                ctx.font = "bold 16px monospace";
+                ctx.fillText("ZONA SEGURA", extinctionEvent.x-55, canvas.height/2);
+            }
+            
+            // Asteroide (Rock) y sus escombros
+            drawAsteroids();
+            drawAsteroidDebris();
+
+            // DASH LASER (destello de trayectoria)
+            if(dashTrail.active) {
+                // Si tiene equipada la skin "Rastro Redst", se dibuja segmentado en vez del láser normal
+                const drewSegmented = Cosmetics.drawSegmentedDashTrail(ctx, dashTrail, PRACTICE_DASH_COLOR);
+                if(!drewSegmented) {
+                    ctx.beginPath();
+                    ctx.moveTo(dashTrail.x1, dashTrail.y1);
+                    ctx.lineTo(dashTrail.x2, dashTrail.y2);
+                    const intensity = 0.7 + Math.sin(Date.now() * 0.03) * 0.3;
+                    ctx.strokeStyle = `rgba(160, 160, 160, ${intensity})`;
+                    ctx.lineWidth = 8;
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = "#a0a0a0";
+                    ctx.stroke();
+                    // Línea interna más brillante
+                    ctx.beginPath();
+                    ctx.moveTo(dashTrail.x1, dashTrail.y1);
+                    ctx.lineTo(dashTrail.x2, dashTrail.y2);
+                    ctx.strokeStyle = `rgba(255, 255, 255, 0.9)`;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+            }
+            
+            // Items de curación (cuadritos verdes)
+            for(let item of healthItems) {
+                const alpha = Math.min(1, item.timer / 30);
+                ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = "lime";
+                ctx.fillRect(item.x - item.size/2, item.y - item.size/2, item.size, item.size);
+                // Brillo interior
+                ctx.fillStyle = `rgba(200, 255, 100, ${alpha})`;
+                ctx.fillRect(item.x - item.size/4, item.y - item.size/4, item.size/2, item.size/2);
+            }
+            ctx.shadowBlur = 0;
+            
+            // Enemigos lentos (Purps) — colores normales, o los de Berserker si la skin "Purpsrker" está equipada
+            const purpColors = Cosmetics.getPurpColors("#b77eff", "#ffaaff");
+            for(let e of slowEnemies) {
+                ctx.fillStyle = purpColors.outer;
+                ctx.shadowBlur = 5;
+                ctx.fillRect(e.x - e.size/2, e.y - e.size/2, e.size, e.size);
+                ctx.fillStyle = purpColors.inner;
+                ctx.fillRect(e.x - e.size/4, e.y - e.size/4, e.size/2, e.size/2);
+            }
+
+            // Rebotones (Pepes, inmortales)
+            for(let bo of bouncers) {
+                ctx.fillStyle = "#ffcc66";
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = "#ffaa33";
+                ctx.fillRect(bo.x - bo.size/2, bo.y - bo.size/2, bo.size, bo.size);
+                ctx.fillStyle = "#ffe6b3";
+                ctx.fillRect(bo.x - bo.size/4, bo.y - bo.size/4, bo.size/2, bo.size/2);
+            }
+            ctx.shadowBlur = 0;
+
+            // Berserker (Brskr)
+            drawBerserkers();
+            
+            // Proyectiles rápidos
+            for(let b of bulletEnemies) {
+                if(b.state === 'aiming') {
+                    ctx.beginPath();
+                    ctx.moveTo(b.x, b.y);
+                    ctx.lineTo(b.targetX, b.targetY);
+                    ctx.strokeStyle = `rgba(255,0,0,${0.5+Math.sin(Date.now()*0.01)*0.3})`;
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([10,8]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = "#ff6666";
+                } else {
+                    ctx.fillStyle = "#ff3300";
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = "red";
+                }
+                ctx.fillRect(b.x - b.size/2, b.y - b.size/2, b.size, b.size);
+            }
+            
+            // Lasers
+            for(let l of lasers) {
+                if(l.charge > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(l.x1, l.y1);
+                    ctx.lineTo(l.x2, l.y2);
+                    let intensity = 0.3 + (l.charge/45) * 0.5;
+                    ctx.strokeStyle = `rgba(255,150,0,${intensity})`;
+                    ctx.lineWidth = 8;
+                    ctx.setLineDash([15,10]);
+                    ctx.stroke();
+                    let patternText = l.pattern === 0 ? "═" : (l.pattern === 1 ? "║" : "╱");
+                    ctx.fillStyle = `rgba(255,200,0,${intensity+0.2})`;
+                    ctx.font = "20px monospace";
+                    ctx.fillText(patternText, (l.x1+l.x2)/2, (l.y1+l.y2)/2);
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(l.x1, l.y1);
+                    ctx.lineTo(l.x2, l.y2);
+                    let color = l.pattern === 0 ? "#ff4444" : (l.pattern === 1 ? "#44ff44" : "#4444ff");
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 5;
+                    ctx.setLineDash([]);
+                    ctx.stroke();
+                }
+            }
+            ctx.setLineDash([]);
+            ctx.shadowBlur = 0;
+
+            // Lasers móviles (Lamov)
+            for(let l of movingLasers) {
+                if(l.charge > 0) {
+                    let intensity = 0.3 + (l.charge / MOVING_LASER_WARMUP) * 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(l.x, 0);
+                    ctx.lineTo(l.x, canvas.height);
+                    ctx.strokeStyle = `rgba(255,150,0,${intensity})`;
+                    ctx.lineWidth = 8;
+                    ctx.setLineDash([15,10]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(l.x, 0);
+                    ctx.lineTo(l.x, canvas.height);
+                    let color = l.colorIdx === 0 ? "#ff4444" : (l.colorIdx === 1 ? "#44ff44" : "#4444ff");
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 5;
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = color;
+                    ctx.stroke();
+                }
+            }
+            ctx.setLineDash([]);
+            ctx.shadowBlur = 0;
+            
+            // Jugador
+            if(player.invincible > 0 && (Math.floor(Date.now()/50)%2 === 0)) {
+                ctx.fillStyle = "#ffffaa";
+            } else {
+                ctx.fillStyle = "#f0f0f0";
+            }
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "white";
+            ctx.fillRect(player.x - player.size/2, player.y - player.size/2, player.size, player.size);
+            ctx.fillStyle = "#888888";
+            ctx.fillRect(player.x - player.size/4, player.y - player.size/4, player.size/2, player.size/2);
+
+            // Mascotas y cosmético equipados (definidos en cosmetics.js)
+            Cosmetics.drawMascots(ctx, player.x, player.y, player.size);
+            Cosmetics.drawCosmetic(ctx, player.x, player.y, player.size);
+
+            // Dash cooldown
+            if(dashCooldown > 0) {
+                ctx.fillStyle = "rgba(160,160,160,0.6)";
+                ctx.fillRect(10, canvas.height-30, (DASH_COOLDOWN_MAX-dashCooldown)*5, 10);
+            }
+            
+            ctx.shadowBlur = 0;
+
+            // Anillos del golpe (skin-hit-rings) y aura de borde al dashear (skin-border-glow)
+            Cosmetics.drawHitParticles(ctx);
+            Cosmetics.drawDashBorderGlow(ctx, canvas);
+
+            // CONFETI (Complejo.Confeti) — encima de la jugabilidad
+            drawConfetti();
+
+            // Game over
+            if(gameOver) {
+                ctx.font = "bold 48px monospace";
+                ctx.fillStyle = "red";
+                ctx.fillText("GAME OVER", canvas.width/2-140, canvas.height/2-40);
+                ctx.font = "20px monospace";
+                ctx.fillStyle = "white";
+                ctx.fillText("Presiona ESPACIO para reiniciar", canvas.width/2-165, canvas.height/2+30);
+            }
+
+            // PAUSA: overlay amarillento claro SOBRE toda la escena (no como fondo), con el
+            // texto centrado encima de todo lo demás.
+            if(paused && !gameOver) {
+                ctx.fillStyle = "rgba(255, 250, 180, 0.35)";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.font = "bold 56px monospace";
+                const pauseText = "PAUSA";
+                const textWidth = ctx.measureText(pauseText).width;
+                ctx.shadowBlur = 14;
+                ctx.shadowColor = "rgba(255,255,150,0.95)";
+                ctx.fillStyle = "#332b00";
+                ctx.fillText(pauseText, canvas.width/2 - textWidth/2, canvas.height/2 + 20);
+                ctx.shadowBlur = 0;
+
+                ctx.font = "16px monospace";
+                const hintText = "Presiona ESPACIO para continuar";
+                const hintWidth = ctx.measureText(hintText).width;
+                ctx.fillStyle = "#332b00";
+                ctx.fillText(hintText, canvas.width/2 - hintWidth/2, canvas.height/2 + 55);
+            }
+        }
+        
+        // ACTUALIZACIÓN PRINCIPAL
+        function update() {
+            Cosmetics.updateEffects(canvas.width, canvas.height);
+            if(gameOver) return;
+            
+            if(player.invincible > 0) player.invincible--;
+            if(dashCooldown > 0) dashCooldown--;
+            
+            // Puntos por tiempo sobrevivido
+            timeScoreCounter++;
+            if(timeScoreCounter >= FRAMES_PER_SECOND) {
+                timeScoreCounter -= FRAMES_PER_SECOND;
+                addScore(TIME_SCORE_AMOUNT);
+            }
+            
+            // Tiempo de partida (HUD)
+            gameTimeFrames++;
+            document.getElementById('gameTime').innerText = formatGameTime(gameTimeFrames);
+            
+            updatePlayerMovement();
+            updateSlowEnemies();
+            updateBulletEnemies();
+            updateLasers();
+            updateShadowEvent();
+            updateExtinctionEvent();
+            updateMovingLasers();
+            updateBouncers();
+            updateAsteroids();
+            updateAsteroidDebris();
+            updateBerserkers();
+            updateSpawners();
+            updateHealthItems();
+            updateDashTrail();
+            updateConfetti();
+            updateCanvasTextOverlay();
+            updateListRunner();
+            
+            // Colisiones proyectil-enemigo lento
+            for(let i=0; i<bulletEnemies.length; i++) {
+                if(bulletEnemies[i].state === 'shooting') {
+                    for(let j=0; j<slowEnemies.length; j++) {
+                        if(Math.hypot(bulletEnemies[i].x - slowEnemies[j].x, bulletEnemies[i].y - slowEnemies[j].y) < 18) {
+                            slowEnemies.splice(j,1);
+                            addScore(50);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            updateDamageFlash();
+        }
+        
+        // ---------- INPUTS TÁCTILES (joystick + cruz de dash) ----------
+        let joystick = { active: false, touchId: null, baseX: 0, baseY: 0, dx: 0, dy: 0 };
+        const JOY_RADIUS = 40; // radio máximo de desplazamiento del knob (px)
+
+        function updateJoystick(clientX, clientY, joystickKnob) {
+            let dx = clientX - joystick.baseX;
+            let dy = clientY - joystick.baseY;
+            let dist = Math.hypot(dx, dy);
+            if(dist > JOY_RADIUS) {
+                dx = dx / dist * JOY_RADIUS;
+                dy = dy / dist * JOY_RADIUS;
+            }
+            joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+            joystick.dx = dx / JOY_RADIUS;
+            joystick.dy = dy / JOY_RADIUS;
+        }
+
+        if(isMobile) {
+            const joystickZone = document.getElementById('joystickZone');
+            const joystickBase = document.getElementById('joystickBase');
+            const joystickKnob = document.getElementById('joystickKnob');
+
+            function resetJoystickKnob() {
+                joystick.active = false;
+                joystick.touchId = null;
+                joystick.dx = 0;
+                joystick.dy = 0;
+                joystickKnob.style.transform = 'translate(0px, 0px)';
+            }
+
+            joystickZone.addEventListener('touchstart', (e) => {
+                if(inMenu) return;
+                if(gameOver) { resetGame(); e.preventDefault(); return; }
+                const touch = e.changedTouches[0];
+                joystick.active = true;
+                joystick.touchId = touch.identifier;
+                const rect = joystickBase.getBoundingClientRect();
+                joystick.baseX = rect.left + rect.width/2;
+                joystick.baseY = rect.top + rect.height/2;
+                updateJoystick(touch.clientX, touch.clientY, joystickKnob);
+                e.preventDefault();
+            }, {passive:false});
+
+            joystickZone.addEventListener('touchmove', (e) => {
+                if(!joystick.active) return;
+                for(const touch of e.changedTouches) {
+                    if(touch.identifier === joystick.touchId) {
+                        updateJoystick(touch.clientX, touch.clientY, joystickKnob);
+                    }
+                }
+                e.preventDefault();
+            }, {passive:false});
+
+            const endJoystickTouch = (e) => {
+                for(const touch of e.changedTouches) {
+                    if(touch.identifier === joystick.touchId) {
+                        resetJoystickKnob();
+                    }
+                }
+                e.preventDefault();
+            };
+            joystickZone.addEventListener('touchend', endJoystickTouch, {passive:false});
+            joystickZone.addEventListener('touchcancel', endJoystickTouch, {passive:false});
+
+            // ---- Dash por deslizamiento (swipe) en el lado derecho de la pantalla ----
+            const swipeZone = document.getElementById('swipeZone');
+            const SWIPE_MIN_DIST = 45; // px mínimos para que cuente como dash (evita toques accidentales)
+            let swipe = { active: false, touchId: null, startX: 0, startY: 0 };
+
+            swipeZone.addEventListener('touchstart', (e) => {
+                if(inMenu) return;
+                if(gameOver) { resetGame(); e.preventDefault(); return; }
+                const touch = e.changedTouches[0];
+                swipe.active = true;
+                swipe.touchId = touch.identifier;
+                swipe.startX = touch.clientX;
+                swipe.startY = touch.clientY;
+                e.preventDefault();
+            }, {passive:false});
+
+            swipeZone.addEventListener('touchmove', (e) => {
+                e.preventDefault(); // evita que la pantalla haga scroll al deslizar
+            }, {passive:false});
+
+            const finishSwipe = (e) => {
+                if(!swipe.active) return;
+                for(const touch of e.changedTouches) {
+                    if(touch.identifier !== swipe.touchId) continue;
+                    if(!inMenu) {
+                        const dx = touch.clientX - swipe.startX;
+                        const dy = touch.clientY - swipe.startY;
+                        const dist = Math.hypot(dx, dy);
+                        if(dist >= SWIPE_MIN_DIST) {
+                            initMusic();
+                            let dirX = 0, dirY = 0;
+                            if(Math.abs(dx) > Math.abs(dy)) {
+                                dirX = dx > 0 ? 1 : -1;
+                            } else {
+                                dirY = dy > 0 ? 1 : -1;
+                            }
+                            performDash(dirX, dirY);
+                        }
+                    }
+                    swipe.active = false;
+                    swipe.touchId = null;
+                }
+                e.preventDefault();
+            };
+            swipeZone.addEventListener('touchend', finishSwipe, {passive:false});
+            swipeZone.addEventListener('touchcancel', () => {
+                swipe.active = false;
+                swipe.touchId = null;
+            }, {passive:false});
+
+            // ---- Pausa/despausa tocando la zona central del canvas (sin espaciadora) ----
+            const pauseZone = document.getElementById('pauseZone');
+            pauseZone.addEventListener('touchstart', (e) => {
+                if(inMenu) return;
+                if(gameOver) {
+                    resetGame();
+                } else {
+                    initMusic();
+                    togglePause();
+                }
+                e.preventDefault();
+            }, {passive:false});
+        }
+
+        // INPUTS
+        window.addEventListener('keydown', (e) => {
+            if(inMenu) return;
+            let key = e.key;
+
+            // ESPACIO: si es game over reinicia; si no, pausa/despausa. Se procesa siempre,
+            // incluso con el juego pausado (para poder despausar).
+            if(key === ' ' || key === 'Spacebar') {
+                e.preventDefault();
+                if(gameOver) {
+                    resetGame();
+                } else {
+                    initMusic();
+                    togglePause();
+                }
+                return;
+            }
+
+            if(paused) return;
+            
+            if(key === 'w') move.up = true;
+            if(key === 's') move.down = true;
+            if(key === 'a') move.left = true;
+            if(key === 'd') move.right = true;
+            
+            let dashX = 0, dashY = 0;
+            if(key === 'ArrowUp') dashY = -1;
+            if(key === 'ArrowDown') dashY = 1;
+            if(key === 'ArrowLeft') dashX = -1;
+            if(key === 'ArrowRight') dashX = 1;
+            if((dashX !== 0 || dashY !== 0)) {
+                performDash(dashX, dashY);
+                e.preventDefault();
+            }
+            if(key.startsWith('Arrow')) e.preventDefault();
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            if(e.key === 'w') move.up = false;
+            if(e.key === 's') move.down = false;
+            if(e.key === 'a') move.left = false;
+            if(e.key === 'd') move.right = false;
+        });
+        
+        canvas.addEventListener('click', () => {
+            if(gameOver) {
+                resetGame();
+            } else {
+                initMusic();
+            }
+        });
+        
+        canvas.addEventListener('click', () => {
+            initMusic();
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) {}
+        });
+        
+        // LOOP (limitado a 60 FPS máximo en cualquier dispositivo, sin importar
+        // la tasa de refresco de la pantalla — algunos celus/monitores van a 90-144Hz,
+        // y como la física está atada a los frames, eso haría el juego más rápido de la cuenta)
+        const TARGET_FPS = 60;
+        const FRAME_DURATION = 1000 / TARGET_FPS;
+        let lastFrameTime = 0;
+
+        function gameLoop(timestamp) {
+            requestAnimationFrame(gameLoop);
+
+            if(!lastFrameTime) lastFrameTime = timestamp;
+            const elapsed = timestamp - lastFrameTime;
+            if(elapsed < FRAME_DURATION) return;
+            lastFrameTime = timestamp - (elapsed % FRAME_DURATION);
+
+            if(!inMenu) {
+                if(!paused) update();
+                draw();
+            }
+        }
+        
+        showGameScreen();
+        resetGame();
+        requestAnimationFrame(gameLoop);
+    })();
+</script>
+</body>
+</html>

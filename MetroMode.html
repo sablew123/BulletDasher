@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>BulletDasher - Metro Mode</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: black;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: monospace;
+            transition: background-color 0.05s ease;
+        }
+        
+        body.damage-flash {
+            background-color: #ff0000 !important;
+        }
+        
+        canvas {
+            border: 2px solid white;
+            box-shadow: 0 0 20px rgba(0,255,255,0.3);
+            cursor: none;
+        }
+
+        canvas.train-warning {
+            border-color: #00fff2 !important;
+            box-shadow: 0 0 30px 10px rgba(0,255,242,0.95), inset 0 0 25px rgba(0,255,242,0.5) !important;
+        }
+
+        #bgParticles {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+            pointer-events: none;
+            border: none;
+            box-shadow: none;
+        }
+
+        #gameCanvas {
+            position: relative;
+            z-index: 5;
+        }
+
+        #trainStatus {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffd24d;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 14px;
+            border-radius: 5px;
+            font-weight: bold;
+            z-index: 10;
+            pointer-events: none;
+            font-size: 13px;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+        
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: lime;
+            background: rgba(0,0,0,0.7);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            z-index: 10;
+            pointer-events: none;
+            font-size: 14px;
+        }
+        
+        .controls-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            font-size: 12px;
+            padding: 5px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 10;
+            pointer-events: none;
+        }
+        
+        .restart-hint {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            color: gray;
+            background: rgba(0,0,0,0.5);
+            font-size: 11px;
+            padding: 5px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .mobile-hidden { display: none !important; }
+
+        #musicToggle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 70;
+            border: 1px solid white;
+            cursor: pointer;
+        }
+
+        #musicToggle:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        #fullscreenBtn {
+            position: absolute;
+            top: 10px;
+            right: 150px;
+            color: white;
+            background: rgba(0,0,0,0.7);
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 5px;
+            font-family: monospace;
+            z-index: 70;
+            border: 1px solid white;
+            cursor: pointer;
+        }
+
+        #fullscreenBtn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        #fullscreenBtn.hidden { display: none !important; }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .neon-btn {
+            position: relative;
+            background: rgba(255,0,0,0.08);
+            color: #ff4444;
+            border: 2px solid #ff0000;
+            padding: 16px 55px;
+            font-size: 22px;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 3px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,0,0,0.6), inset 0 0 10px rgba(255,0,0,0.25);
+            text-shadow: 0 0 8px #ff0000;
+            transition: all 0.2s ease;
+        }
+
+        .neon-btn:hover {
+            background: rgba(255,0,0,0.22);
+            box-shadow: 0 0 22px rgba(255,0,0,0.9), inset 0 0 15px rgba(255,0,0,0.4);
+            transform: scale(1.05);
+            color: #ffaaaa;
+        }
+
+        #menuBtn {
+            position: absolute;
+            bottom: 45px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 70;
+            padding: 10px 28px;
+            font-size: 13px;
+            background: rgba(0,195,255,0.08);
+            color: #4dd6ff;
+            border-color: #00c3ff;
+            box-shadow: 0 0 10px rgba(0,195,255,0.6), inset 0 0 10px rgba(0,195,255,0.25);
+            text-shadow: 0 0 8px #00c3ff;
+        }
+
+        #menuBtn:hover {
+            transform: translateX(-50%) scale(1.05);
+            background: rgba(0,195,255,0.22);
+            box-shadow: 0 0 22px rgba(0,195,255,0.9), inset 0 0 15px rgba(0,195,255,0.4);
+            color: #b3ecff;
+        }
+
+        /* ---------- CONTROLES MÓVILES ---------- */
+        #mobileControls {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            pointer-events: none;
+        }
+
+        #mobileControls.hidden { display: none !important; }
+
+        #joystickZone {
+            position: absolute;
+            left: 20px;
+            bottom: 20px;
+            width: 130px;
+            height: 130px;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        #joystickBase {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.07);
+            border: 2px solid rgba(0,255,255,0.55);
+            box-shadow: 0 0 15px rgba(0,255,255,0.3), inset 0 0 15px rgba(0,255,255,0.15);
+        }
+
+        #joystickKnob {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 54px;
+            height: 54px;
+            margin-left: -27px;
+            margin-top: -27px;
+            border-radius: 50%;
+            background: rgba(0,255,255,0.55);
+            box-shadow: 0 0 12px rgba(0,255,255,0.9);
+        }
+
+        #swipeZone {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 50%;
+            height: 100%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+    </style>
+<script src="cosmetics.js"></script>
+<script src="achievements.js"></script>
+</head>
+<body>
+<canvas id="bgParticles"></canvas>
+<div id="ui" class="hidden">
+    ❤️ VIDA: <span id="hp">3</span> | 🎯 SCORE: <span id="score">0</span><br>
+    ⏱️ Tiempo: <span id="gameTime">0:00</span> | ☠️ Extinciones: <span id="extinctionCount">0</span>
+</div>
+<div id="trainStatus" class="hidden">
+    🚇 Parada <span id="stopNumber">1</span> | <span id="trainState">En marcha</span>
+</div>
+<div class="controls-info hidden">
+    🎮 WASD = mover | ⚡ FLECHAS = dash (atraviesa y mata enemigos, deja vida) | 📱 Joystick + desliza a la derecha para dash
+</div>
+<div class="restart-hint hidden">
+    💀 GAME OVER → Presiona ESPACIO para reiniciar
+</div>
+<button id="musicToggle" class="hidden">🎵 Música: ON</button>
+<button id="fullscreenBtn" class="hidden">⛶ Pantalla completa</button>
+<button id="menuBtn" class="neon-btn hidden">🏠 Menú Principal</button>
+<canvas id="gameCanvas" width="1400" height="480" class="hidden"></canvas>
+
+<div id="mobileControls" class="hidden">
+    <div id="joystickZone">
+        <div id="joystickBase">
+            <div id="joystickKnob"></div>
+        </div>
+    </div>
+    <div id="swipeZone"></div>
+</div>
+
+<script>
+    (function(){
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const bodyElement = document.body;
+
+        // ---------- PARTÍCULAS DE FONDO (efecto "metro en movimiento") ----------
+        const bgCanvas = document.getElementById('bgParticles');
+        const bgCtx = bgCanvas.getContext('2d');
+
+        function resizeBgCanvas() {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+        }
+        resizeBgCanvas();
+        window.addEventListener('resize', resizeBgCanvas);
+
+        const NUM_BG_PARTICLES = 70;
+        let bgParticles = [];
+        function initBgParticles() {
+            bgParticles = [];
+            for(let i=0; i<NUM_BG_PARTICLES; i++) {
+                bgParticles.push({
+                    x: Math.random() * (window.innerWidth + 400) - 200,
+                    y: Math.random() * window.innerHeight,
+                    len: 25 + Math.random() * 90,
+                    speedMul: 0.5 + Math.random() * 1.0
+                });
+            }
+        }
+        initBgParticles();
+
+        function updateBgParticles() {
+            // las partículas se mueven en dirección CONTRARIA a la del tren
+            const dir = -train.direction;
+            for(let p of bgParticles) {
+                p.x += dir * train.particleSpeed * p.speedMul;
+                if(p.x < -250) p.x = window.innerWidth + 200;
+                if(p.x > window.innerWidth + 250) p.x = -200;
+            }
+        }
+
+        function drawBgParticles() {
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            const alpha = clamp(train.particleSpeed / train.baseParticleSpeed, 0, 1);
+            if(alpha <= 0.02) return;
+            const dirSign = -train.direction >= 0 ? 1 : -1;
+            bgCtx.strokeStyle = `rgba(0,255,255,${alpha * 0.45})`;
+            bgCtx.lineWidth = 2;
+            for(let p of bgParticles) {
+                bgCtx.beginPath();
+                bgCtx.moveTo(p.x, p.y);
+                bgCtx.lineTo(p.x - dirSign * p.len, p.y);
+                bgCtx.stroke();
+            }
+        }
+
+        // ---------- CONTROL DE PANTALLA DE JUEGO ----------
+        const menuBtn = document.getElementById('menuBtn');
+        const gameScreenElements = [
+            document.getElementById('ui'),
+            document.getElementById('trainStatus'),
+            document.querySelector('.controls-info'),
+            document.querySelector('.restart-hint'),
+            document.getElementById('musicToggle'),
+            canvas
+        ];
+
+        // En ClassicMode.html el juego arranca directo, sin overlay de menú
+        let inMenu = false;
+
+        // ---------- DETECCIÓN DE MÓVIL Y CONTROLES TÁCTILES ----------
+        const isMobile = (('ontouchstart' in window) || navigator.maxTouchPoints > 0)
+            && window.matchMedia('(pointer: coarse)').matches;
+
+        const mobileControls = document.getElementById('mobileControls');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+
+        if(isMobile) {
+            // En celu este texto estorba y no aplica (no hay teclado) - se oculta siempre
+            document.querySelector('.controls-info').classList.add('mobile-hidden');
+            document.querySelector('.restart-hint').classList.add('mobile-hidden');
+        }
+
+        // ---------- ESCALAR CANVAS EN CELU (sin estirar, centrado) ----------
+        function resizeCanvasForMobile() {
+            if(!isMobile) return;
+            const availW = window.innerWidth;
+            const availH = window.innerHeight;
+            const scale = Math.min(availW / canvas.width, availH / canvas.height);
+            canvas.style.width = (canvas.width * scale) + 'px';
+            canvas.style.height = (canvas.height * scale) + 'px';
+        }
+
+        if(isMobile) {
+            fullscreenBtn.classList.remove('hidden');
+            resizeCanvasForMobile();
+            window.addEventListener('resize', resizeCanvasForMobile);
+            window.addEventListener('orientationchange', resizeCanvasForMobile);
+        }
+
+        function toggleFullscreen() {
+            const el = document.documentElement;
+            if(!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if(el.requestFullscreen) el.requestFullscreen().catch(() => {});
+                else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+            } else {
+                if(document.exitFullscreen) document.exitFullscreen();
+                else if(document.webkitExitFullscreen) document.webkitExitFullscreen();
+            }
+        }
+
+        function updateFullscreenBtnUI() {
+            const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+            fullscreenBtn.textContent = isFs ? "✕ Salir pantalla completa" : "⛶ Pantalla completa";
+        }
+
+        fullscreenBtn.addEventListener('click', toggleFullscreen);
+        document.addEventListener('fullscreenchange', () => { updateFullscreenBtnUI(); resizeCanvasForMobile(); });
+        document.addEventListener('webkitfullscreenchange', () => { updateFullscreenBtnUI(); resizeCanvasForMobile(); });
+
+        function showGameScreen() {
+            inMenu = false;
+            gameScreenElements.forEach(el => el.classList.remove('hidden'));
+            if(isMobile) mobileControls.classList.remove('hidden');
+        }
+
+        function goToMainMenu() {
+            stopMusic();
+            window.location.href = 'index.html';
+        }
+
+        menuBtn.addEventListener('click', goToMainMenu);
+        
+        // ---------- AUDIO ----------
+        let backgroundMusic = null;
+        let musicInitialized = false;
+        let musicLoopWatcher = null; // logro "Ambient Music": se arma en initMusic()
+        
+        function initMusic() {
+            if (musicInitialized) return;
+            try {
+                backgroundMusic = new Audio('musicametro.mp3');
+                backgroundMusic.loop = true;
+                backgroundMusic.volume = 0.7;
+                musicLoopWatcher = Achievements.watchMusicLoop(backgroundMusic, 'ambient-music', Achievements.MODES.METRO, () => {
+                    if (!tookDamageThisRun) Achievements.tryUnlock('dash-god', Achievements.MODES.METRO);
+                });
+                if (!musicMuted) {
+                    backgroundMusic.play().catch(e => console.log("Esperando interacción para reproducir música"));
+                }
+                musicInitialized = true;
+            } catch(e) { console.log("No se pudo cargar musicametro.mp3", e); }
+        }
+        
+        function restartMusic() {
+            if (backgroundMusic) {
+                backgroundMusic.pause();
+                backgroundMusic.currentTime = 0;
+                if (musicLoopWatcher) musicLoopWatcher.reset(); // este reinicio manual no cuenta como vuelta real
+                if (!musicMuted) {
+                    backgroundMusic.play().catch(e => console.log("No se pudo reproducir música", e));
+                }
+            } else {
+                initMusic();
+            }
+        }
+        
+        function stopMusic() {
+            if (backgroundMusic) {
+                backgroundMusic.pause();
+            }
+        }
+        
+        // ---------- MUTE SOLO MÚSICA (no afecta efectos de sonido) ----------
+        let musicMuted = false;
+        const musicToggleBtn = document.getElementById('musicToggle');
+        
+        function updateMusicToggleUI() {
+            musicToggleBtn.textContent = musicMuted ? "🔇 Música: OFF" : "🎵 Música: ON";
+        }
+        
+        function toggleMusic() {
+            musicMuted = !musicMuted;
+            if (backgroundMusic) {
+                if (musicMuted) {
+                    backgroundMusic.pause();
+                } else if (!gameOver) {
+                    backgroundMusic.play().catch(e => {});
+                }
+            }
+            updateMusicToggleUI();
+        }
+        
+        musicToggleBtn.addEventListener('click', toggleMusic);
+        
+        function playDamageSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = 220;
+                gainNode.gain.value = 0.3;
+                
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.3);
+                oscillator.stop(audioCtx.currentTime + 0.3);
+                
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) { console.log("Audio no soportado"); }
+        }
+        
+        function playHealSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = 523.25; // Do agudo
+                gainNode.gain.value = 0.2;
+                
+                oscillator.start();
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.2);
+                oscillator.stop(audioCtx.currentTime + 0.2);
+                
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) { console.log("Audio no soportado"); }
+        }
+        
+        // DESTELLO ROJO
+        let damageFlashTimer = 0;
+        function triggerDamageFlash() {
+            bodyElement.classList.add('damage-flash');
+            damageFlashTimer = 6;
+            playDamageSound();
+        }
+        
+        function updateDamageFlash() {
+            if (damageFlashTimer > 0) {
+                damageFlashTimer--;
+                if (damageFlashTimer <= 0) {
+                    bodyElement.classList.remove('damage-flash');
+                }
+            }
+        }
+        
+        // ---------- DASH LASER ----------
+        let dashTrail = { active: false, x1: 0, y1: 0, x2: 0, y2: 0, timer: 0 };
+        const MODE_DASH_COLOR = '#00ffff'; // color neón del dash en este modo — usado por los cosméticos
+        const DASH_TRAIL_DURATION = 8; // frames que dura el laser visible
+        
+        // Items de curación (cuadritos verdes)
+        let healthItems = []; // { x, y, size, timer }
+        const HEALTH_ITEM_DURATION = 180; // 3 segundos a 60fps
+        const HEALTH_ITEM_SIZE = 10;
+        
+        // ---------- PARÁMETROS ----------
+        let hp = 3;
+        let score = 0;
+        let gameOver = false;
+        let timeScoreCounter = 0; // frames acumulados para el puntaje por tiempo
+        const FRAMES_PER_SECOND = 60;
+        const TIME_SCORE_AMOUNT = 5; // puntos que suma cada segundo sobrevivido
+        let gameTimeFrames = 0; // frames transcurridos de partida (para el HUD de tiempo)
+        
+        function formatGameTime(frames) {
+            const totalSeconds = Math.floor(frames / FRAMES_PER_SECOND);
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+        }
+        
+        // Jugador
+        let player = { x: canvas.width/2, y: canvas.height/2, size: 18, invincible: 0, inertiaVx: 0 };
+        let move = { up: false, down: false, left: false, right: false };
+        let dashCooldown = 0;
+        const DASH_SHORT = 80;
+        const DASH_COOLDOWN_MAX = 15;
+        let dashIframes = 0; // logro "Holy Frame": frames de invuln que vienen específicamente del dash
+        
+        // EVENTO DE EXTINCIÓN (banda vertical que recorre el vagón de lado a lado)
+        let extinctionEvent = { active: false, x: 0, vx: 0, bandWidth: 190, timer: 0, phase: 0, everSafe: false };
+        
+        // ---- Estado de logros (por partida) ----
+        let tookDamageThisRun = false; // logro "Dash God": ni un solo golpe en toda la partida
+        let purpKillsThisRun = 0;      // logro "Purpnocide": Purps matados por dash en esta partida
+        let purpItemsEatenThisRun = 0; // cajitas de vida de Purps ya comidas
+        let purpnocideMissed = false;  // se puso true si se dejó expirar una cajita de un Purp
+        const EXTINCTION_SPEED = 3.3; // más rápida que los enemigos lentos (maxSpeed 2.0), pero no frenética
+        let extinctionCount = 0; // veces que ha terminado el evento de extinción
+        
+        // Listas de enemigos
+        let slowEnemies = [];
+        let bulletEnemies = [];
+        
+        // Temporizadores
+        let slowSpawnTimer = 0;
+        let extinctionEventTimer = 0;
+
+        // ---------- REBOTONES (pasajeros tranquilos, inmortales) ----------
+        let bouncers = []; // { x, y, size, vx, vy, targetStop, leaving, exiting, doorSide, waitX, waitY }
+        const BOUNCER_SIZE = 14 * 1.4;       // un poco más grandes que los lentos normales
+        const BOUNCER_SPEED = 5.3;           // velocidad de rebote tipo pong
+        const BOUNCER_LEAVE_SPEED = 1.8;     // velocidad calma cuando van a salir
+
+        // ---------- LASERS MÓVILES (solo horizontales, verticales de orientación) ----------
+        let movingLasers = []; // { x, fromLeft, charge, speed, colorIdx }
+        let movingLaserSpawnTimer = 0;
+        const MOVING_LASER_WARMUP = 45;      // frames de advertencia antes de moverse (igual que classic)
+        const MOVING_LASER_HIT_HALFWIDTH = 4;
+
+        // ---------- TREN / METRO ----------
+        const TOTAL_STOPS = 5;
+        const STOP_TRAVEL_MIN = 300;   // 5s a 60fps
+        const STOP_TRAVEL_MAX = 480;   // 8s a 60fps
+        const STOP_PAUSE = 60;         // 1s parado
+        const TRAIN_RAMP_FRAMES = 55;  // frames de aceleración/frenado de las partículas
+        const PUSH_ON_STOP = 42;       // empujón hacia adelante al frenar (inercia)
+        const PUSH_ON_START = 32;      // empujón hacia atrás al arrancar (inercia)
+        const DOOR_WIDTH = 240;        // ancho de las puertas (segmentos en techo/suelo)
+
+        // Aviso visual justo antes de parar: el borde del canvas parpadea celeste neón dos veces
+        const STOP_WARNING_FRAMES = 40;   // ventana (en frames) antes de llegar a la parada
+        const STOP_WARNING_BLINK_ON = 10; // frames que dura cada parpadeo encendido
+        const STOP_WARNING_GAP_START = 20; // en qué frame de la ventana arranca el segundo parpadeo
+
+        let train = {
+            state: 'traveling',   // 'traveling' | 'stopped'
+            direction: 1,         // +1 o -1
+            currentStop: 1,
+            timer: 0,
+            travelDuration: 0,
+            particleSpeed: 0,
+            baseParticleSpeed: 16
+        };
+
+        function initTrain() {
+            train.currentStop = Math.floor(Math.random() * TOTAL_STOPS) + 1;
+            if(train.currentStop === 1) train.direction = 1;
+            else if(train.currentStop === TOTAL_STOPS) train.direction = -1;
+            else train.direction = Math.random() < 0.5 ? 1 : -1;
+            train.state = 'traveling';
+            train.travelDuration = STOP_TRAVEL_MIN + Math.random() * (STOP_TRAVEL_MAX - STOP_TRAVEL_MIN);
+            train.timer = train.travelDuration;
+            train.particleSpeed = 0;
+            updateTrainUI();
+        }
+
+        function updateTrainUI() {
+            const stopEl = document.getElementById('stopNumber');
+            const stateEl = document.getElementById('trainState');
+            if(stopEl) stopEl.innerText = train.currentStop;
+            if(stateEl) stateEl.innerText = train.state === 'stopped' ? 'Puertas abiertas' : 'En marcha';
+        }
+
+        const INERTIA_FRICTION = 0.90; // qué tan rápido se disipa el empujón (más cerca de 1 = más gradual)
+
+        function applyInertiaPush(dirSign, strength) {
+            // En vez de mover la posición de un tirón, le sumamos un impulso de velocidad
+            // que se va frenando solo (fricción) durante varios frames: se siente como
+            // un empujón real, no un blink.
+            const v0 = dirSign * strength * (1 - INERTIA_FRICTION);
+            player.inertiaVx = (player.inertiaVx || 0) + v0;
+            for(let e of slowEnemies) e.inertiaVx = (e.inertiaVx || 0) + v0;
+            for(let b of bulletEnemies) b.inertiaVx = (b.inertiaVx || 0) + v0;
+        }
+
+        function updateInertia() {
+            if(player.inertiaVx) {
+                player.x = clamp(player.x + player.inertiaVx, player.size/2, canvas.width - player.size/2);
+                player.inertiaVx *= INERTIA_FRICTION;
+                if(Math.abs(player.inertiaVx) < 0.05) player.inertiaVx = 0;
+            }
+            for(let e of slowEnemies) {
+                if(e.inertiaVx) {
+                    e.x += e.inertiaVx;
+                    e.inertiaVx *= INERTIA_FRICTION;
+                    if(Math.abs(e.inertiaVx) < 0.05) e.inertiaVx = 0;
+                }
+            }
+            for(let b of bulletEnemies) {
+                if(b.inertiaVx) {
+                    b.x += b.inertiaVx;
+                    b.inertiaVx *= INERTIA_FRICTION;
+                    if(Math.abs(b.inertiaVx) < 0.05) b.inertiaVx = 0;
+                }
+            }
+        }
+
+        function updateTrain() {
+            if(gameOver) return;
+
+            if(train.state === 'traveling') {
+                train.timer--;
+                if(train.timer <= 0) {
+                    // Llega a la siguiente parada y se detiene
+                    train.currentStop += train.direction;
+                    train.state = 'stopped';
+                    train.timer = STOP_PAUSE;
+                    applyInertiaPush(train.direction, PUSH_ON_STOP);
+                    spawnDoorEnemies();
+                    if(train.currentStop >= TOTAL_STOPS) { train.currentStop = TOTAL_STOPS; train.direction = -1; }
+                    else if(train.currentStop <= 1) { train.currentStop = 1; train.direction = 1; }
+                    updateTrainUI();
+                }
+            } else {
+                train.timer--;
+                if(train.timer <= 0) {
+                    train.state = 'traveling';
+                    train.travelDuration = STOP_TRAVEL_MIN + Math.random() * (STOP_TRAVEL_MAX - STOP_TRAVEL_MIN);
+                    train.timer = train.travelDuration;
+                    applyInertiaPush(-train.direction, PUSH_ON_START);
+                    updateTrainUI();
+                }
+            }
+
+            // Velocidad de las partículas: rampa de aceleración al arrancar y de frenado al llegar
+            if(train.state === 'stopped') {
+                train.particleSpeed = 0;
+            } else {
+                const elapsed = train.travelDuration - train.timer;
+                const remaining = train.timer;
+                const factor = clamp(Math.min(elapsed / TRAIN_RAMP_FRAMES, remaining / TRAIN_RAMP_FRAMES, 1), 0, 1);
+                train.particleSpeed = train.baseParticleSpeed * factor;
+            }
+        }
+        
+        // Aviso de parada: el borde del canvas parpadea celeste neón dos veces justo antes de parar
+        function updateStopWarningBorder() {
+            let flashOn = false;
+            if(train.state === 'traveling' && train.timer <= STOP_WARNING_FRAMES) {
+                let elapsed = STOP_WARNING_FRAMES - train.timer;
+                flashOn = (elapsed < STOP_WARNING_BLINK_ON) ||
+                          (elapsed >= STOP_WARNING_GAP_START && elapsed < STOP_WARNING_GAP_START + STOP_WARNING_BLINK_ON);
+            }
+            canvas.classList.toggle('train-warning', flashOn);
+        }
+        
+        // ---------- FUNCIONES AUX ----------
+        function clamp(value, min, max) { return Math.min(max, Math.max(min, value)); }
+        
+        function updateUI() {
+            document.getElementById('hp').innerText = hp;
+            document.getElementById('score').innerText = score;
+            
+            document.getElementById('extinctionCount').innerText = extinctionCount;
+        }
+        
+        function healPlayer() {
+            if (hp < 3) {
+                hp++;
+                updateUI();
+                playHealSound();
+                return true;
+            }
+            return false;
+        }
+        
+        function damagePlayer() {
+            if(player.invincible > 0 || gameOver) return;
+            hp--;
+            tookDamageThisRun = true; // logro "Dash God": ya no se puede conseguir esta partida
+            Cosmetics.onPlayerHit(player.x, player.y); // skin-hit-rings
+            triggerDamageFlash();
+            updateUI();
+            if(hp <= 0) {
+                gameOver = true;
+                hp = 0;
+                updateUI();
+                stopMusic();
+                menuBtn.classList.remove('hidden');
+                canvas.classList.remove('train-warning');
+            } else {
+                player.invincible = 20;
+            }
+        }
+        
+        function addScore(amount) {
+            score += amount;
+            updateUI();
+        }
+        
+        function spawnHealthItem(x, y, fromSniperKill, fromPurpKill) {
+            healthItems.push({
+                x: x, y: y,
+                size: HEALTH_ITEM_SIZE,
+                timer: HEALTH_ITEM_DURATION,
+                fromSniperKill: !!fromSniperKill, // logro "SniperOfSnipers": hay que comerse esta cajita puntual
+                fromPurpKill: !!fromPurpKill       // logro "Purpnocide": cajita dejada por un Purp
+            });
+        }
+        
+        // Matar enemigo y posiblemente soltar vida si fue por dash.
+        // sourceKind identifica si el muerto era un Redst (bulletEnemy) y en qué estado:
+        // 'redst-aiming' (todavía no empezó su trayecto) o 'redst-shooting' (ya viajando),
+        // o 'purp' si era un enemigo lento (Purp, logro "Purpnocide").
+        function killEnemy(enemy, isFromDash, enemyX, enemyY, sourceKind) {
+            addScore(50);
+            if (isFromDash) {
+                if (sourceKind === 'redst-aiming') {
+                    Achievements.tryUnlock('short-distance', Achievements.MODES.METRO);
+                }
+                if (sourceKind === 'purp') {
+                    purpKillsThisRun++;
+                }
+                spawnHealthItem(enemyX, enemyY, sourceKind === 'redst-shooting', sourceKind === 'purp');
+            }
+        }
+        
+        function resetGame() {
+            hp = 3;
+            score = 0;
+            gameOver = false;
+            timeScoreCounter = 0;
+            gameTimeFrames = 0;
+            player.x = canvas.width/2;
+            player.y = canvas.height/2;
+            player.invincible = 0;
+            player.inertiaVx = 0;
+            dashCooldown = 0;
+            dashIframes = 0;
+            slowEnemies = [];
+            bulletEnemies = [];
+            healthItems = [];
+            Cosmetics.resetEffects();
+            dashTrail.active = false;
+            canvas.classList.remove('train-warning');
+            extinctionEvent.active = false;
+            extinctionEvent.phase = 0;
+            extinctionEvent.everSafe = false;
+            extinctionCount = 0;
+            tookDamageThisRun = false;
+            purpKillsThisRun = 0;
+            purpItemsEatenThisRun = 0;
+            purpnocideMissed = false;
+            slowSpawnTimer = 0;
+            extinctionEventTimer = 500;
+            bouncers = [];
+            movingLasers = [];
+            movingLaserSpawnTimer = 0;
+            initTrain();
+            updateUI();
+            document.getElementById('gameTime').innerText = formatGameTime(0);
+            menuBtn.classList.add('hidden');
+            restartMusic();
+        }
+        
+        // Spawn de GRUPO de enemigos lentos — SOLO desde los lados izq/der (vienen de otros vagones)
+        function spawnSlowEnemyGroup() {
+            let count = Math.floor(Math.random() * 3) + 3;
+            for(let g=0; g<count; g++) {
+                let fromLeft = Math.random() < 0.5;
+                let x = fromLeft ? -30 : canvas.width + 30;
+                let y = Math.random() * canvas.height;
+                
+                slowEnemies.push({
+                    x: x, y: y, size: 14,
+                    vx: (fromLeft ? 1 : -1) * (0.4 + Math.random() * 0.6),
+                    vy: (Math.random() - 0.5) * 1.5,
+                    maxSpeed: 2.0
+                });
+            }
+        }
+        
+        // Spawn de un grupo de proyectiles saliendo de una puerta (techo o suelo)
+        function spawnDoorBulletGroup(doorY) {
+            let count = Math.floor(Math.random() * 2) + 2; // 2-3
+            for(let g=0; g<count; g++) {
+                let x = canvas.width/2 + (Math.random() - 0.5) * DOOR_WIDTH;
+                bulletEnemies.push({
+                    x: x, y: doorY, size: 10,
+                    state: 'aiming',
+                    aimTimer: 35,
+                    targetX: player.x, targetY: player.y,
+                    vx: 0, vy: 0
+                });
+            }
+        }
+        
+        // Unos pocos enemigos lentos que también entran por la puerta cuando el metro se detiene
+        function spawnDoorSlowEnemies(doorY) {
+            let count = Math.floor(Math.random() * 2) + 1; // 1-2
+            for(let g=0; g<count; g++) {
+                let x = canvas.width/2 + (Math.random() - 0.5) * DOOR_WIDTH;
+                slowEnemies.push({
+                    x: x, y: doorY, size: 14,
+                    vx: (Math.random() - 0.5) * 1.0,
+                    vy: (doorY < 0 ? 1 : -1) * (0.6 + Math.random() * 0.6),
+                    maxSpeed: 2.0
+                });
+            }
+        }
+        
+        // Rebotones que entran por una puerta (0-2 por puerta por parada), cada uno con una parada
+        // secreta de destino. Rebotan tipo pong hasta que la siguiente parada del tren sea la suya.
+        function spawnDoorBouncers(doorY) {
+            let count = Math.floor(Math.random() * 3); // 0-2
+            for(let g=0; g<count; g++) {
+                let x = canvas.width/2 + (Math.random() - 0.5) * DOOR_WIDTH;
+                let targetStop;
+                do {
+                    targetStop = Math.floor(Math.random() * TOTAL_STOPS) + 1;
+                } while(targetStop === train.currentStop);
+
+                let vx = (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 0.5);
+                let vy = (doorY < 0 ? 1 : -1) * (0.5 + Math.random() * 0.5);
+                let len = Math.hypot(vx, vy);
+                vx = (vx / len) * BOUNCER_SPEED;
+                vy = (vy / len) * BOUNCER_SPEED;
+
+                bouncers.push({
+                    x: x, y: doorY, size: BOUNCER_SIZE,
+                    vx: vx, vy: vy,
+                    targetStop: targetStop,
+                    leaving: false,
+                    exiting: false,
+                    doorSide: null, waitX: 0, waitY: 0
+                });
+            }
+        }
+
+        // Al detenerse el metro: dos grupos de proyectiles por cada puerta (techo y suelo) + algunos lentos
+        // + rebotones (pasajeros tranquilos)
+        function spawnDoorEnemies() {
+            const topDoorY = -20;
+            const bottomDoorY = canvas.height + 20;
+            spawnDoorBulletGroup(topDoorY);
+            spawnDoorBulletGroup(topDoorY);
+            spawnDoorBulletGroup(bottomDoorY);
+            spawnDoorBulletGroup(bottomDoorY);
+            spawnDoorSlowEnemies(topDoorY);
+            spawnDoorSlowEnemies(bottomDoorY);
+            spawnDoorBouncers(topDoorY);
+            spawnDoorBouncers(bottomDoorY);
+        }
+
+        // Laser móvil: aparece pegado a un lado (izq/der), se queda un momento cargando
+        // como advertencia (igual que los lasers del classic) y luego cruza a gran velocidad
+        // hacia el lado contrario. Solo se mueve horizontalmente, nunca en diagonal.
+        function spawnMovingLaser() {
+            let fromLeft = Math.random() < 0.5;
+            movingLasers.push({
+                x: fromLeft ? 0 : canvas.width,
+                fromLeft: fromLeft,
+                charge: MOVING_LASER_WARMUP,
+                speed: 3.2 + Math.random() * 0.8,
+                colorIdx: Math.floor(Math.random() * 3)
+            });
+        }
+        
+        // EVENTO DE EXTINCIÓN: banda vertical (cubre todo el alto, no todo el ancho) que va de lado a lado
+        function startExtinctionEvent() {
+            if(extinctionEvent.active) return;
+            extinctionEvent.active = true;
+            extinctionEvent.phase = 1;
+            extinctionEvent.everSafe = false; // logro "Too Slow!": ¿el jugador llegó a estar a salvo en algún momento?
+            extinctionEvent.timer = 240;
+            extinctionEvent.x = Math.random() * (canvas.width - extinctionEvent.bandWidth) + extinctionEvent.bandWidth/2;
+            extinctionEvent.vx = (Math.random() < 0.5 ? -1 : 1) * EXTINCTION_SPEED;
+        }
+        
+        function updateExtinctionEvent() {
+            if(!extinctionEvent.active) return;
+            
+            if(extinctionEvent.phase === 1) {
+                extinctionEvent.x += extinctionEvent.vx;
+                const half = extinctionEvent.bandWidth/2;
+                if(extinctionEvent.x - half < 0) { extinctionEvent.x = half; extinctionEvent.vx = Math.abs(extinctionEvent.vx); }
+                if(extinctionEvent.x + half > canvas.width) { extinctionEvent.x = canvas.width - half; extinctionEvent.vx = -Math.abs(extinctionEvent.vx); }
+                
+                // ¿El jugador está a salvo AHORA MISMO, mientras la banda todavía se mueve?
+                // Si esto pasó alguna vez, "llegó a tiempo" — aunque la banda lo termine dejando
+                // atrás al resolverse (logro "Too Slow!").
+                if(player.x >= extinctionEvent.x - half && player.x <= extinctionEvent.x + half) {
+                    extinctionEvent.everSafe = true;
+                }
+                
+                extinctionEvent.timer--;
+                if(extinctionEvent.timer <= 0) {
+                    extinctionEvent.phase = 2;
+                    const left = extinctionEvent.x - half;
+                    const right = extinctionEvent.x + half;
+                    if(player.x < left || player.x > right) {
+                        if (dashIframes > 0) {
+                            Achievements.tryUnlock('holy-frame', Achievements.MODES.METRO);
+                        }
+                        if (extinctionEvent.everSafe) {
+                            Achievements.tryUnlock('too-slow', Achievements.MODES.METRO);
+                        }
+                        damagePlayer();
+                    } else {
+                        addScore(100);
+                    }
+                    for(let i=0; i<slowEnemies.length; i++) {
+                        let e = slowEnemies[i];
+                        if(e.x < left || e.x > right) {
+                            slowEnemies.splice(i,1);
+                            i--;
+                        }
+                    }
+                    for(let i=0; i<bulletEnemies.length; i++) {
+                        let b = bulletEnemies[i];
+                        if(b.x < left || b.x > right) {
+                            bulletEnemies.splice(i,1);
+                            i--;
+                        }
+                    }
+                    extinctionEvent.active = false;
+                    extinctionEvent.phase = 0;
+                    extinctionCount++;
+                    updateUI();
+                }
+            }
+        }
+        
+        // Movimiento del jugador
+        function updatePlayerMovement() {
+            let speed = 4.8;
+            let dx = 0, dy = 0;
+            if(move.up) dy -= 1;
+            if(move.down) dy += 1;
+            if(move.left) dx -= 1;
+            if(move.right) dx += 1;
+
+            if(joystick.active && (joystick.dx !== 0 || joystick.dy !== 0)) {
+                // Movimiento analógico del joystick táctil (respeta magnitud parcial)
+                dx = joystick.dx;
+                dy = joystick.dy;
+                let len = Math.hypot(dx, dy);
+                if(len > 1) { dx /= len; dy /= len; }
+                player.x += dx * speed;
+                player.y += dy * speed;
+            } else if(dx !== 0 || dy !== 0) {
+                let len = Math.hypot(dx, dy);
+                dx /= len;
+                dy /= len;
+                player.x += dx * speed;
+                player.y += dy * speed;
+            }
+            
+            player.x = clamp(player.x, player.size/2, canvas.width - player.size/2);
+            player.y = clamp(player.y, player.size/2, canvas.height - player.size/2);
+        }
+        
+        // Función para verificar si un punto está cerca de un segmento (para el laser de dash)
+        function pointToSegmentDistance(px, py, x1, y1, x2, y2) {
+            const ax = px - x1;
+            const ay = py - y1;
+            const bx = x2 - x1;
+            const by = y2 - y1;
+            const dot = ax * bx + ay * by;
+            const len2 = bx * bx + by * by;
+            if (len2 === 0) return Math.hypot(px - x1, py - y1);
+            let t = dot / len2;
+            t = Math.max(0, Math.min(1, t));
+            const closestX = x1 + t * bx;
+            const closestY = y1 + t * by;
+            return Math.hypot(px - closestX, py - closestY);
+        }
+        
+        // DASH con laser y muerte de enemigos atravesados
+        function performDash(dirX, dirY) {
+            if(dashCooldown > 0 || gameOver) return;
+            if(dirX === 0 && dirY === 0) return;
+            let len = Math.hypot(dirX, dirY);
+            dirX /= len;
+            dirY /= len;
+            
+            let dashDistance = DASH_SHORT;
+            
+            const startX = player.x;
+            const startY = player.y;
+            const endX = clamp(player.x + dirX * dashDistance, player.size/2, canvas.width - player.size/2);
+            const endY = clamp(player.y + dirY * dashDistance, player.size/2, canvas.height - player.size/2);
+            
+            // ACTIVAR EL LASER DE DASH (destello)
+            dashTrail.active = true;
+            dashTrail.x1 = startX;
+            dashTrail.y1 = startY;
+            dashTrail.x2 = endX;
+            dashTrail.y2 = endY;
+            dashTrail.timer = DASH_TRAIL_DURATION;
+            Cosmetics.triggerDashBorderGlow(MODE_DASH_COLOR); // skin-border-glow
+            
+            // MATAR ENEMIGOS QUE EL LASER ATRAVIESA
+            // Enemigos lentos
+            for(let i=0; i<slowEnemies.length; i++) {
+                let e = slowEnemies[i];
+                let distToLaser = pointToSegmentDistance(e.x, e.y, startX, startY, endX, endY);
+                if(distToLaser < e.size/2 + 8) {
+                    let enemyX = e.x, enemyY = e.y;
+                    slowEnemies.splice(i,1);
+                    killEnemy(null, true, enemyX, enemyY, 'purp');
+                    i--;
+                }
+            }
+            
+            // Enemigos rápidos (proyectiles) — Redst. Si el láser lo atraviesa mientras
+            // todavía está "aiming" (no arrancó su trayecto) => ShortDistance.
+            // Si lo atraviesa ya "shooting" (en pleno trayecto) => deja la cajita marcada
+            // para SniperOfSnipers (que se confirma al comerla, no al matar).
+            for(let i=0; i<bulletEnemies.length; i++) {
+                let b = bulletEnemies[i];
+                let distToLaser = pointToSegmentDistance(b.x, b.y, startX, startY, endX, endY);
+                if(distToLaser < b.size/2 + 3) {
+                    let enemyX = b.x, enemyY = b.y;
+                    let sourceKind = (b.state === 'aiming') ? 'redst-aiming' : 'redst-shooting';
+                    bulletEnemies.splice(i,1);
+                    killEnemy(null, true, enemyX, enemyY, sourceKind);
+                    i--;
+                }
+            }
+            
+            // Rebotones: son inmortales, el dash no los mata — solo los asusta y cambian de
+            // dirección (huyen en diagonal, contrario a donde está el jugador respecto a ellos).
+            // Los que ya van saliendo con calma hacia la puerta no se ven afectados.
+            let bouncersScaredThisDash = 0; // logro "Subway jerk": 3+ Pepes en un solo dash
+            for(let i=0; i<bouncers.length; i++) {
+                let bo = bouncers[i];
+                if(bo.leaving) continue;
+                let distToLaser = pointToSegmentDistance(bo.x, bo.y, startX, startY, endX, endY);
+                if(distToLaser < bo.size/2 + 8) {
+                    bouncersScaredThisDash++;
+                    let dx = bo.x - player.x;
+                    let dy = bo.y - player.y;
+                    let dist = Math.hypot(dx, dy);
+                    if(dist > 0.01) {
+                        bo.vx = (dx / dist) * BOUNCER_SPEED;
+                        bo.vy = (dy / dist) * BOUNCER_SPEED;
+                    }
+                }
+            }
+            if(bouncersScaredThisDash >= 3) {
+                Achievements.tryUnlock('subway-jerk', Achievements.MODES.METRO);
+            }
+            
+            // Mover al jugador
+            player.x = endX;
+            player.y = endY;
+            
+            dashCooldown = DASH_COOLDOWN_MAX;
+            player.invincible = 8;
+            dashIframes = 8;
+        }
+        
+        // Actualizar items de curación
+        function updateHealthItems() {
+            for(let i=0; i<healthItems.length; i++) {
+                let item = healthItems[i];
+                item.timer--;
+                if(item.timer <= 0) {
+                    if (item.fromPurpKill) purpnocideMissed = true; // se dejó vencer una cajita de Purp
+                    healthItems.splice(i,1);
+                    i--;
+                    continue;
+                }
+                // Colisión con jugador
+                let dist = Math.hypot(player.x - item.x, player.y - item.y);
+                if(dist < player.size/2 + item.size/2) {
+                    healPlayer();
+                    if (item.fromSniperKill) {
+                        Achievements.tryUnlock('sniper-of-snipers', Achievements.MODES.METRO);
+                    }
+                    if (item.fromPurpKill) {
+                        purpItemsEatenThisRun++;
+                        if (purpKillsThisRun >= 30 && !purpnocideMissed && purpItemsEatenThisRun >= purpKillsThisRun) {
+                            Achievements.tryUnlock('purpnocide', Achievements.MODES.METRO);
+                        }
+                    }
+                    healthItems.splice(i,1);
+                    i--;
+                }
+            }
+        }
+        
+        // Actualizar dash trail
+        function updateDashTrail() {
+            if(dashTrail.active) {
+                dashTrail.timer--;
+                if(dashTrail.timer <= 0) {
+                    dashTrail.active = false;
+                }
+            }
+        }
+        
+        // Enemigos lentos
+        function updateSlowEnemies() {
+            for(let i=0; i<slowEnemies.length; i++) {
+                let e = slowEnemies[i];
+                let dx = player.x - e.x;
+                let dy = player.y - e.y;
+                let dist = Math.hypot(dx, dy);
+                if(dist > 0.01) {
+                    let dirX = dx / dist;
+                    let dirY = dy / dist;
+                    e.vx += dirX * 0.1;
+                    e.vy += dirY * 0.1;
+                    let spd = Math.hypot(e.vx, e.vy);
+                    if(spd > e.maxSpeed) {
+                        e.vx = (e.vx / spd) * e.maxSpeed;
+                        e.vy = (e.vy / spd) * e.maxSpeed;
+                    }
+                }
+                e.x += e.vx;
+                e.y += e.vy;
+                
+                if(e.x + e.size/2 < -50 || e.x - e.size/2 > canvas.width+50 || 
+                   e.y + e.size/2 < -50 || e.y - e.size/2 > canvas.height+50) {
+                    slowEnemies.splice(i,1);
+                    i--;
+                    continue;
+                }
+                
+                if(player.invincible === 0 && !gameOver && Math.hypot(player.x - e.x, player.y - e.y) < (player.size/2 + e.size/2)) {
+                    damagePlayer();
+                }
+            }
+        }
+        
+        // Proyectiles rápidos
+        function updateBulletEnemies() {
+            for(let i=0; i<bulletEnemies.length; i++) {
+                let b = bulletEnemies[i];
+                if(b.state === 'aiming') {
+                    b.aimTimer--;
+                    b.targetX = player.x;
+                    b.targetY = player.y;
+                    if(b.aimTimer <= 0) {
+                        b.state = 'shooting';
+                        let dx = player.x - b.x;
+                        let dy = player.y - b.y;
+                        let dist = Math.hypot(dx, dy);
+                        if(dist > 0.01) {
+                            let spd = 16;
+                            b.vx = (dx / dist) * spd;
+                            b.vy = (dy / dist) * spd;
+                        }
+                    }
+                } else {
+                    b.x += b.vx;
+                    b.y += b.vy;
+                    if(b.x + 50 < 0 || b.x - 50 > canvas.width || b.y + 50 < 0 || b.y - 50 > canvas.height) {
+                        bulletEnemies.splice(i,1);
+                        i--;
+                        continue;
+                    }
+                    if(player.invincible === 0 && !gameOver && Math.hypot(player.x - b.x, player.y - b.y) < (player.size/2 + b.size/2)) {
+                        damagePlayer();
+                        bulletEnemies.splice(i,1);
+                        i--;
+                    }
+                }
+            }
+        }
+        
+        // Rebotones (pasajeros tranquilos) — rebotan tipo pong hasta que su parada está por llegar,
+        // momento en el que se calman y caminan hacia una zona cercana al centro para salir por la
+        // puerta cuando el tren se detenga ahí. Son inmortales y no los afecta la inercia del tren.
+        function updateBouncers() {
+            let nextStop = (train.state === 'traveling') ? (train.currentStop + train.direction) : null;
+
+            for(let i=0; i<bouncers.length; i++) {
+                let bo = bouncers[i];
+
+                if(!bo.leaving && nextStop !== null && nextStop === bo.targetStop) {
+                    bo.leaving = true;
+                    bo.exiting = false;
+                    bo.doorSide = Math.random() < 0.5 ? 'top' : 'bottom';
+                    bo.waitX = canvas.width/2 + (Math.random() - 0.5) * (DOOR_WIDTH - bo.size*2);
+                    bo.waitY = bo.doorSide === 'top' ? bo.size*2 : canvas.height - bo.size*2;
+                }
+
+                if(bo.leaving) {
+                    if(!bo.exiting) {
+                        // Camina con calma hacia la puerta por la que va a salir y espera ahí
+                        let dx = bo.waitX - bo.x;
+                        let dy = bo.waitY - bo.y;
+                        let dist = Math.hypot(dx, dy);
+                        if(dist > 2) {
+                            bo.x += (dx / dist) * BOUNCER_LEAVE_SPEED;
+                            bo.y += (dy / dist) * BOUNCER_LEAVE_SPEED;
+                        }
+                        // Recién sale cuando el tren efectivamente se detiene en su parada (puertas abiertas)
+                        if(train.state === 'stopped' && train.currentStop === bo.targetStop) {
+                            bo.exiting = true;
+                        }
+                    } else {
+                        // Cruza la puerta y desaparece al salir del vagón
+                        bo.y += (bo.doorSide === 'top' ? -1 : 1) * BOUNCER_LEAVE_SPEED;
+                        if(bo.doorSide === 'top' && bo.y < -bo.size) {
+                            bouncers.splice(i, 1);
+                            i--;
+                            continue;
+                        }
+                        if(bo.doorSide === 'bottom' && bo.y > canvas.height + bo.size) {
+                            bouncers.splice(i, 1);
+                            i--;
+                            continue;
+                        }
+                    }
+                } else {
+                    bo.x += bo.vx;
+                    bo.y += bo.vy;
+                    if(bo.x - bo.size/2 < 0) { bo.x = bo.size/2; bo.vx = Math.abs(bo.vx); }
+                    if(bo.x + bo.size/2 > canvas.width) { bo.x = canvas.width - bo.size/2; bo.vx = -Math.abs(bo.vx); }
+                    if(bo.y - bo.size/2 < 0) { bo.y = bo.size/2; bo.vy = Math.abs(bo.vy); }
+                    if(bo.y + bo.size/2 > canvas.height) { bo.y = canvas.height - bo.size/2; bo.vy = -Math.abs(bo.vy); }
+                }
+
+                if(player.invincible === 0 && !gameOver && Math.hypot(player.x - bo.x, player.y - bo.y) < (player.size/2 + bo.size/2)) {
+                    damagePlayer();
+
+                }
+            }
+        }
+
+        // Lasers móviles: durante la carga quedan quietos pegados al borde de aparición (advertencia),
+        // luego cruzan en línea recta horizontal hacia el otro lado a gran velocidad.
+        function updateMovingLasers() {
+            for(let i=0; i<movingLasers.length; i++) {
+                let l = movingLasers[i];
+                if(l.charge > 0) {
+                    l.charge--;
+                } else {
+                    l.x += l.fromLeft ? l.speed : -l.speed;
+
+                    if(player.invincible === 0 && !gameOver && Math.abs(player.x - l.x) < (player.size/2 + MOVING_LASER_HIT_HALFWIDTH)) {
+                        damagePlayer();
+                    }
+
+                    if(l.x < -20 || l.x > canvas.width + 20) {
+                        movingLasers.splice(i, 1);
+                        i--;
+                    }
+                }
+            }
+        }
+
+        // Spawners
+        function updateSpawners() {
+            if(gameOver) return;
+            
+            if(slowSpawnTimer <= 0) { 
+                spawnSlowEnemyGroup(); 
+                slowSpawnTimer = 70; 
+            } else slowSpawnTimer--;
+            
+            // Los proyectiles NO spawnean por timer: aparecen por las puertas cuando el metro se detiene
+            // (ver spawnDoorEnemies(), llamada desde updateTrain())
+            
+            if(extinctionEventTimer <= 0 && !extinctionEvent.active) { 
+                startExtinctionEvent(); 
+                extinctionEventTimer = 900;
+            } else if(!extinctionEvent.active) extinctionEventTimer--;
+
+            // Lasers móviles: aparecen de a uno cada ciertos segundos, hasta 2 en pantalla como máximo
+            if(movingLaserSpawnTimer <= 0) {
+                if(movingLasers.length < 2) {
+                    spawnMovingLaser();
+                }
+                movingLaserSpawnTimer = 30 + Math.floor(Math.random() * 90); // ~0.5s-2s a 60fps
+            } else movingLaserSpawnTimer--;
+        }
+        
+        // DIBUJADO
+        function draw() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            
+            let gradient = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+            gradient.addColorStop(0, "#0a0a2a");
+            gradient.addColorStop(1, "#1a0a2a");
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            
+            // Marcas del piso del vagón (líneas verticales sutiles, dan sensación de largo pasillo)
+            ctx.strokeStyle = "rgba(255,255,255,0.05)";
+            ctx.lineWidth = 1;
+            for(let gx = 0; gx < canvas.width; gx += 60) {
+                ctx.beginPath();
+                ctx.moveTo(gx, 0);
+                ctx.lineTo(gx, canvas.height);
+                ctx.stroke();
+            }
+            
+            // PUERTAS (segmentos en el techo y el suelo, por donde entran los enemigos al detenerse)
+            const doorLeft = canvas.width/2 - DOOR_WIDTH/2;
+            const doorGlow = train.state === 'stopped' ? (0.5 + Math.sin(Date.now()*0.02)*0.3) : 0.18;
+            ctx.strokeStyle = `rgba(255,210,77,${doorGlow})`;
+            ctx.lineWidth = 6;
+            ctx.setLineDash([14,8]);
+            ctx.beginPath();
+            ctx.moveTo(doorLeft, 3);
+            ctx.lineTo(doorLeft + DOOR_WIDTH, 3);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(doorLeft, canvas.height-3);
+            ctx.lineTo(doorLeft + DOOR_WIDTH, canvas.height-3);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // BANDA DE EXTINCIÓN
+            if(extinctionEvent.active && extinctionEvent.phase === 1) {
+                ctx.fillStyle = "rgba(0,0,0,0.85)";
+                ctx.fillRect(0,0,canvas.width,canvas.height);
+                const half = extinctionEvent.bandWidth/2;
+                ctx.fillStyle = "rgba(255,255,200,0.4)";
+                ctx.fillRect(extinctionEvent.x - half, 0, extinctionEvent.bandWidth, canvas.height);
+                ctx.strokeStyle = "yellow";
+                ctx.lineWidth = 4;
+                ctx.strokeRect(extinctionEvent.x - half + 2, 2, extinctionEvent.bandWidth - 4, canvas.height - 4);
+                ctx.fillStyle = "white";
+                ctx.font = "bold 16px monospace";
+                ctx.fillText("ZONA SEGURA", extinctionEvent.x-55, canvas.height/2);
+            }
+            
+            // DASH LASER (destello de trayectoria)
+            if(dashTrail.active) {
+                const drewSegmented = Cosmetics.drawSegmentedDashTrail(ctx, dashTrail, MODE_DASH_COLOR);
+                if(!drewSegmented) {
+                    ctx.beginPath();
+                    ctx.moveTo(dashTrail.x1, dashTrail.y1);
+                    ctx.lineTo(dashTrail.x2, dashTrail.y2);
+                    const intensity = 0.7 + Math.sin(Date.now() * 0.03) * 0.3;
+                    ctx.strokeStyle = `rgba(0, 255, 255, ${intensity})`;
+                    ctx.lineWidth = 8;
+                    ctx.shadowBlur = 12;
+                    ctx.shadowColor = "cyan";
+                    ctx.stroke();
+                    // Línea interna más brillante
+                    ctx.beginPath();
+                    ctx.moveTo(dashTrail.x1, dashTrail.y1);
+                    ctx.lineTo(dashTrail.x2, dashTrail.y2);
+                    ctx.strokeStyle = `rgba(255, 255, 255, 0.9)`;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+                }
+            }
+            
+            // Items de curación (cuadritos verdes)
+            for(let item of healthItems) {
+                const alpha = Math.min(1, item.timer / 30);
+                ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = "lime";
+                ctx.fillRect(item.x - item.size/2, item.y - item.size/2, item.size, item.size);
+                // Brillo interior
+                ctx.fillStyle = `rgba(200, 255, 100, ${alpha})`;
+                ctx.fillRect(item.x - item.size/4, item.y - item.size/4, item.size/2, item.size/2);
+            }
+            ctx.shadowBlur = 0;
+            
+            // Enemigos lentos (Purps)
+            const purpColors = Cosmetics.getPurpColors("#b77eff", "#ffaaff");
+            for(let e of slowEnemies) {
+                ctx.fillStyle = purpColors.outer;
+                ctx.shadowBlur = 5;
+                ctx.fillRect(e.x - e.size/2, e.y - e.size/2, e.size, e.size);
+                ctx.fillStyle = purpColors.inner;
+                ctx.fillRect(e.x - e.size/4, e.y - e.size/4, e.size/2, e.size/2);
+            }
+            
+            // Rebotones (pasajeros tranquilos, inmortales)
+            for(let bo of bouncers) {
+                ctx.fillStyle = "#ffcc66";
+                ctx.shadowBlur = 6;
+                ctx.shadowColor = "#ffaa33";
+                ctx.fillRect(bo.x - bo.size/2, bo.y - bo.size/2, bo.size, bo.size);
+                ctx.fillStyle = "#ffe6b3";
+                ctx.fillRect(bo.x - bo.size/4, bo.y - bo.size/4, bo.size/2, bo.size/2);
+            }
+            ctx.shadowBlur = 0;
+            
+            // Lasers móviles (mismo estilo que los del classic: advertencia punteada y luego sólidos)
+            for(let l of movingLasers) {
+                if(l.charge > 0) {
+                    let intensity = 0.3 + (l.charge / MOVING_LASER_WARMUP) * 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(l.x, 0);
+                    ctx.lineTo(l.x, canvas.height);
+                    ctx.strokeStyle = `rgba(255,150,0,${intensity})`;
+                    ctx.lineWidth = 8;
+                    ctx.setLineDash([15,10]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                } else {
+                    ctx.beginPath();
+                    ctx.moveTo(l.x, 0);
+                    ctx.lineTo(l.x, canvas.height);
+                    let color = l.colorIdx === 0 ? "#ff4444" : (l.colorIdx === 1 ? "#44ff44" : "#4444ff");
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 5;
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = color;
+                    ctx.stroke();
+                }
+            }
+            ctx.setLineDash([]);
+            ctx.shadowBlur = 0;
+            
+            // Proyectiles rápidos
+            for(let b of bulletEnemies) {
+                if(b.state === 'aiming') {
+                    ctx.beginPath();
+                    ctx.moveTo(b.x, b.y);
+                    ctx.lineTo(b.targetX, b.targetY);
+                    ctx.strokeStyle = `rgba(255,0,0,${0.5+Math.sin(Date.now()*0.01)*0.3})`;
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([10,8]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                    ctx.fillStyle = "#ff6666";
+                } else {
+                    ctx.fillStyle = "#ff3300";
+                    ctx.shadowBlur = 8;
+                    ctx.shadowColor = "red";
+                }
+                ctx.fillRect(b.x - b.size/2, b.y - b.size/2, b.size, b.size);
+            }
+            
+            ctx.setLineDash([]);
+            ctx.shadowBlur = 0;
+            
+            // Jugador
+            if(player.invincible > 0 && (Math.floor(Date.now()/50)%2 === 0)) {
+                ctx.fillStyle = "#ffffaa";
+            } else {
+                ctx.fillStyle = "#f0f0f0";
+            }
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "white";
+            ctx.fillRect(player.x - player.size/2, player.y - player.size/2, player.size, player.size);
+            ctx.fillStyle = "#ff8800";
+            ctx.fillRect(player.x - player.size/4, player.y - player.size/4, player.size/2, player.size/2);
+
+            // Mascotas y cosmético equipados
+            Cosmetics.drawMascots(ctx, player.x, player.y, player.size);
+            Cosmetics.drawCosmetic(ctx, player.x, player.y, player.size);
+            
+            // Dash cooldown
+            if(dashCooldown > 0) {
+                ctx.fillStyle = "rgba(0,255,255,0.6)";
+                ctx.fillRect(10, canvas.height-30, (DASH_COOLDOWN_MAX-dashCooldown)*5, 10);
+            }
+            
+            ctx.shadowBlur = 0;
+
+            // Anillos del golpe y aura de borde al dashear (skins)
+            Cosmetics.drawHitParticles(ctx);
+            Cosmetics.drawDashBorderGlow(ctx, canvas);
+            
+            // Game over
+            if(gameOver) {
+                ctx.font = "bold 48px monospace";
+                ctx.fillStyle = "red";
+                ctx.fillText("GAME OVER", canvas.width/2-140, canvas.height/2-40);
+                ctx.font = "20px monospace";
+                ctx.fillStyle = "white";
+                ctx.fillText("Presiona ESPACIO para reiniciar", canvas.width/2-165, canvas.height/2+30);
+            }
+        }
+        
+        // ACTUALIZACIÓN PRINCIPAL
+        function update() {
+            Cosmetics.updateEffects(canvas.width, canvas.height);
+            if(gameOver) return;
+            
+            if(player.invincible > 0) player.invincible--;
+            if(dashIframes > 0) dashIframes--;
+            if(dashCooldown > 0) dashCooldown--;
+            
+            // Puntos por tiempo sobrevivido
+            timeScoreCounter++;
+            if(timeScoreCounter >= FRAMES_PER_SECOND) {
+                timeScoreCounter -= FRAMES_PER_SECOND;
+                addScore(TIME_SCORE_AMOUNT);
+            }
+            
+            // Tiempo de partida (HUD)
+            gameTimeFrames++;
+            document.getElementById('gameTime').innerText = formatGameTime(gameTimeFrames);
+            
+            updateTrain();
+            updateStopWarningBorder();
+            updateBgParticles();
+            updatePlayerMovement();
+            updateInertia();
+            updateSlowEnemies();
+            updateBulletEnemies();
+            updateBouncers();
+            updateMovingLasers();
+            updateExtinctionEvent();
+            updateSpawners();
+            updateHealthItems();
+            updateDashTrail();
+            
+            // Colisiones proyectil-enemigo lento
+            for(let i=0; i<bulletEnemies.length; i++) {
+                if(bulletEnemies[i].state === 'shooting') {
+                    for(let j=0; j<slowEnemies.length; j++) {
+                        if(Math.hypot(bulletEnemies[i].x - slowEnemies[j].x, bulletEnemies[i].y - slowEnemies[j].y) < 18) {
+                            slowEnemies.splice(j,1);
+                            addScore(50);
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Colisiones proyectil-rebotón: el rebotón es inmortal, el proyectil es el que muere
+            for(let i=0; i<bulletEnemies.length; i++) {
+                if(bulletEnemies[i].state === 'shooting') {
+                    for(let j=0; j<bouncers.length; j++) {
+                        if(Math.hypot(bulletEnemies[i].x - bouncers[j].x, bulletEnemies[i].y - bouncers[j].y) < (bulletEnemies[i].size/2 + bouncers[j].size/2)) {
+                            bulletEnemies.splice(i,1);
+                            i--;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            updateDamageFlash();
+        }
+        
+        // ---------- INPUTS TÁCTILES (joystick + cruz de dash) ----------
+        let joystick = { active: false, touchId: null, baseX: 0, baseY: 0, dx: 0, dy: 0 };
+        const JOY_RADIUS = 40; // radio máximo de desplazamiento del knob (px)
+
+        function updateJoystick(clientX, clientY, joystickKnob) {
+            let dx = clientX - joystick.baseX;
+            let dy = clientY - joystick.baseY;
+            let dist = Math.hypot(dx, dy);
+            if(dist > JOY_RADIUS) {
+                dx = dx / dist * JOY_RADIUS;
+                dy = dy / dist * JOY_RADIUS;
+            }
+            joystickKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+            joystick.dx = dx / JOY_RADIUS;
+            joystick.dy = dy / JOY_RADIUS;
+        }
+
+        if(isMobile) {
+            const joystickZone = document.getElementById('joystickZone');
+            const joystickBase = document.getElementById('joystickBase');
+            const joystickKnob = document.getElementById('joystickKnob');
+
+            function resetJoystickKnob() {
+                joystick.active = false;
+                joystick.touchId = null;
+                joystick.dx = 0;
+                joystick.dy = 0;
+                joystickKnob.style.transform = 'translate(0px, 0px)';
+            }
+
+            joystickZone.addEventListener('touchstart', (e) => {
+                if(inMenu) return;
+                if(gameOver) { resetGame(); e.preventDefault(); return; }
+                const touch = e.changedTouches[0];
+                joystick.active = true;
+                joystick.touchId = touch.identifier;
+                const rect = joystickBase.getBoundingClientRect();
+                joystick.baseX = rect.left + rect.width/2;
+                joystick.baseY = rect.top + rect.height/2;
+                updateJoystick(touch.clientX, touch.clientY, joystickKnob);
+                e.preventDefault();
+            }, {passive:false});
+
+            joystickZone.addEventListener('touchmove', (e) => {
+                if(!joystick.active) return;
+                for(const touch of e.changedTouches) {
+                    if(touch.identifier === joystick.touchId) {
+                        updateJoystick(touch.clientX, touch.clientY, joystickKnob);
+                    }
+                }
+                e.preventDefault();
+            }, {passive:false});
+
+            const endJoystickTouch = (e) => {
+                for(const touch of e.changedTouches) {
+                    if(touch.identifier === joystick.touchId) {
+                        resetJoystickKnob();
+                    }
+                }
+                e.preventDefault();
+            };
+            joystickZone.addEventListener('touchend', endJoystickTouch, {passive:false});
+            joystickZone.addEventListener('touchcancel', endJoystickTouch, {passive:false});
+
+            // ---- Dash por deslizamiento (swipe) en el lado derecho de la pantalla ----
+            const swipeZone = document.getElementById('swipeZone');
+            const SWIPE_MIN_DIST = 45; // px mínimos para que cuente como dash (evita toques accidentales)
+            let swipe = { active: false, touchId: null, startX: 0, startY: 0 };
+
+            swipeZone.addEventListener('touchstart', (e) => {
+                if(inMenu) return;
+                if(gameOver) { resetGame(); e.preventDefault(); return; }
+                const touch = e.changedTouches[0];
+                swipe.active = true;
+                swipe.touchId = touch.identifier;
+                swipe.startX = touch.clientX;
+                swipe.startY = touch.clientY;
+                e.preventDefault();
+            }, {passive:false});
+
+            swipeZone.addEventListener('touchmove', (e) => {
+                e.preventDefault(); // evita que la pantalla haga scroll al deslizar
+            }, {passive:false});
+
+            const finishSwipe = (e) => {
+                if(!swipe.active) return;
+                for(const touch of e.changedTouches) {
+                    if(touch.identifier !== swipe.touchId) continue;
+                    if(!inMenu) {
+                        const dx = touch.clientX - swipe.startX;
+                        const dy = touch.clientY - swipe.startY;
+                        const dist = Math.hypot(dx, dy);
+                        if(dist >= SWIPE_MIN_DIST) {
+                            initMusic();
+                            let dirX = 0, dirY = 0;
+                            if(Math.abs(dx) > Math.abs(dy)) {
+                                dirX = dx > 0 ? 1 : -1;
+                            } else {
+                                dirY = dy > 0 ? 1 : -1;
+                            }
+                            performDash(dirX, dirY);
+                        }
+                    }
+                    swipe.active = false;
+                    swipe.touchId = null;
+                }
+                e.preventDefault();
+            };
+            swipeZone.addEventListener('touchend', finishSwipe, {passive:false});
+            swipeZone.addEventListener('touchcancel', () => {
+                swipe.active = false;
+                swipe.touchId = null;
+            }, {passive:false});
+        }
+
+        // INPUTS
+        window.addEventListener('keydown', (e) => {
+            if(inMenu) return;
+            let key = e.key;
+            
+            if(key === 'w') move.up = true;
+            if(key === 's') move.down = true;
+            if(key === 'a') move.left = true;
+            if(key === 'd') move.right = true;
+            
+            let dashX = 0, dashY = 0;
+            if(key === 'ArrowUp') dashY = -1;
+            if(key === 'ArrowDown') dashY = 1;
+            if(key === 'ArrowLeft') dashX = -1;
+            if(key === 'ArrowRight') dashX = 1;
+            if((dashX !== 0 || dashY !== 0)) {
+                performDash(dashX, dashY);
+                e.preventDefault();
+            }
+            if(key.startsWith('Arrow')) e.preventDefault();
+            
+            if(key === ' ' || key === 'Spacebar') {
+                e.preventDefault();
+                if(gameOver) {
+                    resetGame();
+                } else {
+                    initMusic();
+                }
+            }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            if(e.key === 'w') move.up = false;
+            if(e.key === 's') move.down = false;
+            if(e.key === 'a') move.left = false;
+            if(e.key === 'd') move.right = false;
+        });
+        
+        canvas.addEventListener('click', () => {
+            if(gameOver) {
+                resetGame();
+            } else {
+                initMusic();
+            }
+        });
+        
+        canvas.addEventListener('click', () => {
+            initMusic();
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) {}
+        });
+        
+        // LOOP (limitado a 60 FPS máximo en cualquier dispositivo, sin importar
+        // la tasa de refresco de la pantalla — algunos celus/monitores van a 90-144Hz,
+        // y como la física está atada a los frames, eso haría el juego más rápido de la cuenta)
+        const TARGET_FPS = 60;
+        const FRAME_DURATION = 1000 / TARGET_FPS;
+        let lastFrameTime = 0;
+
+        function gameLoop(timestamp) {
+            requestAnimationFrame(gameLoop);
+
+            if(!lastFrameTime) lastFrameTime = timestamp;
+            const elapsed = timestamp - lastFrameTime;
+            if(elapsed < FRAME_DURATION) return;
+            lastFrameTime = timestamp - (elapsed % FRAME_DURATION);
+
+            if(!inMenu) {
+                update();
+                draw();
+                drawBgParticles();
+            }
+        }
+        
+        showGameScreen();
+        resetGame();
+        requestAnimationFrame(gameLoop);
+    })();
+</script>
+</body>
+</html>

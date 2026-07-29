@@ -1,0 +1,207 @@
+{
+  "_comment": "Definición de recompensas visuales de BulletDasher. Cada logro (por id, igual al array `achievements` de index.html) desbloquea exactamente una recompensa. cosmetics.js consume este mismo contenido (embebido como JS) para no depender de fetch() bajo file://.",
+
+  "equipLimits": {
+    "cosmetic": 1,
+    "mascot": 3,
+    "skin": null
+  },
+
+  "rewards": [
+    {
+      "achievementId": "classical-music",
+      "rewardId": "mascot-purp",
+      "type": "mascot",
+      "name": "Purpcito",
+      "visual": {
+        "kind": "square-duo",
+        "outerColor": "#b77eff",
+        "innerColor": "#ffaaff",
+        "sizePx": 8,
+        "orbitRadiusPx": 30,
+        "orbitSpeed": 1
+      }
+    },
+    {
+      "achievementId": "ambient-music",
+      "rewardId": "mascot-pepe",
+      "type": "mascot",
+      "name": "Pepecito",
+      "visual": {
+        "kind": "square-duo",
+        "outerColor": "#ffcc66",
+        "innerColor": "#ffe6b3",
+        "sizePx": 9,
+        "orbitRadiusPx": 32,
+        "orbitSpeed": 1
+      }
+    },
+    {
+      "achievementId": "space-music",
+      "rewardId": "mascot-berserker",
+      "type": "mascot",
+      "name": "Brskrcito",
+      "visual": {
+        "kind": "diamond-spin",
+        "baseColor": [255, 95, 40],
+        "blinkColor": [255, 15, 15],
+        "coreColor": [255, 255, 200],
+        "sizePx": 9,
+        "orbitRadiusPx": 34,
+        "orbitSpeed": 1,
+        "spinSpeed": 0.12
+      }
+    },
+    {
+      "achievementId": "sniper-of-snipers",
+      "rewardId": "mascot-redst",
+      "type": "mascot",
+      "name": "Redstcito",
+      "visual": {
+        "kind": "square-glow",
+        "color": "#ff3300",
+        "glowColor": "red",
+        "sizePx": 6,
+        "orbitRadiusPx": 26,
+        "orbitSpeed": 2.4
+      }
+    },
+    {
+      "achievementId": "short-distance",
+      "rewardId": "skin-redst-trail",
+      "type": "skin",
+      "name": "Rastro Redst",
+      "unique": false,
+      "visual": {
+        "kind": "dash-trail-segmented",
+        "colorSource": "mode-dash-color",
+        "dashPattern": [10, 8],
+        "lineWidth": 6,
+        "glowBlur": 10
+      }
+    },
+    {
+      "achievementId": "holy-frame",
+      "rewardId": "mascot-extincion",
+      "type": "mascot",
+      "name": "Zona Segura",
+      "visual": {
+        "kind": "circle-transparent",
+        "fillColor": "rgba(255,255,200,0.4)",
+        "strokeColor": "#ffff00",
+        "sizePx": 10,
+        "orbitRadiusPx": 28,
+        "orbitSpeed": 0.7
+      }
+    },
+    {
+      "achievementId": "no-euclidian",
+      "rewardId": "cosmetic-cigarette",
+      "type": "cosmetic",
+      "name": "Cigarrito",
+      "visual": {
+        "kind": "emoji-attached",
+        "emoji": "🚬",
+        "position": "left",
+        "fontSizePx": 14,
+        "rotationDeg": -20,
+        "offsetPx": { "x": -12, "y": 2 }
+      }
+    },
+    {
+      "achievementId": "dashing-engineer",
+      "rewardId": "cosmetic-helmet",
+      "type": "cosmetic",
+      "name": "Casco de Ingeniero",
+      "visual": {
+        "kind": "emoji-attached",
+        "emoji": "⛑️",
+        "position": "top",
+        "fontSizePx": 16,
+        "rotationDeg": 0,
+        "offsetPx": { "x": 0, "y": -14 }
+      }
+    },
+    {
+      "achievementId": "i-choose-death",
+      "rewardId": "mascot-moai",
+      "type": "mascot",
+      "name": "Moai",
+      "visual": {
+        "kind": "emoji",
+        "emoji": "🗿",
+        "fontSizePx": 16,
+        "orbitRadiusPx": 30,
+        "orbitSpeed": 1
+      }
+    },
+    {
+      "achievementId": "dash-god",
+      "rewardId": "skin-border-glow",
+      "type": "skin",
+      "name": "Aura de Dash",
+      "unique": true,
+      "visual": {
+        "kind": "canvas-border-glow",
+        "colorSource": "mode-dash-color",
+        "fadeFrames": 26,
+        "maxBlur": 40
+      }
+    },
+    {
+      "achievementId": "too-slow",
+      "rewardId": "skin-hit-rings",
+      "type": "skin",
+      "name": "Anillos Perdidos",
+      "unique": true,
+      "visual": {
+        "kind": "hit-particles",
+        "emoji": "💍",
+        "minCount": 6,
+        "maxCount": 10,
+        "fontSizePx": 12,
+        "gravity": 0.35,
+        "lifeFrames": 70,
+        "fadeFrames": 15
+      }
+    },
+    {
+      "achievementId": "subway-jerk",
+      "rewardId": "cosmetic-cap",
+      "type": "cosmetic",
+      "name": "Gorrita",
+      "visual": {
+        "kind": "emoji-attached",
+        "emoji": "🧢",
+        "position": "top",
+        "fontSizePx": 15,
+        "rotationDeg": 0,
+        "offsetPx": { "x": 0, "y": -13 }
+      }
+    },
+    {
+      "achievementId": "yujiro-hanma",
+      "rewardId": "cosmetic-arms",
+      "type": "cosmetic",
+      "name": "Brazos de Ogro",
+      "visual": {
+        "kind": "emoji-arms",
+        "emoji": "💪",
+        "fontSizePx": 13,
+        "offsetPx": { "x": 13, "y": 2 }
+      }
+    },
+    {
+      "achievementId": "purpnocide",
+      "rewardId": "skin-purp-recolor",
+      "type": "skin",
+      "name": "Purpsrker",
+      "unique": true,
+      "visual": {
+        "kind": "purp-recolor",
+        "outerColor": "rgb(255,95,40)",
+        "innerColor": "rgb(255,170,90)"
+      }
+    }
+  ]
+}
