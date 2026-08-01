@@ -183,6 +183,79 @@
             z-index: 10;
         }
 
+        /* ===== Envoltorio que hace que Modo Historia mida
+           exactamente lo mismo que los 3 botones de arriba juntos ===== */
+        .menu-body {
+            position: relative;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 22px;
+        }
+
+        .neon-btn.mode-history {
+            overflow: visible;
+            color: #8a8a8a;
+            border: 2px solid #2a2a2a;
+            background: rgba(120,120,120,0.06);
+            box-shadow: 0 0 8px rgba(0,0,0,0.6), inset 0 0 8px rgba(255,255,255,0.03);
+            text-shadow: 0 0 4px rgba(255,255,255,0.15);
+            padding: 20px 22px;
+            font-size: 24px;
+            transition: background 0.5s ease, box-shadow 0.5s ease, color 0.5s ease, border-color 0.5s ease, transform 0.2s ease;
+        }
+
+        /* en este botón el texto queda siempre visible, no se revela con hover */
+        .neon-btn.mode-history .btn-label {
+            max-width: none;
+            opacity: 1;
+            margin-left: 12px;
+        }
+
+        .neon-btn.mode-history:hover {
+            animation: historyFlicker 0.8s steps(2, end) forwards;
+            transform: scale(1.03);
+        }
+
+        @keyframes historyFlicker {
+            0%   { color: #8a8a8a; border-color: #2a2a2a; background: rgba(120,120,120,0.06); box-shadow: 0 0 8px rgba(0,0,0,0.6); text-shadow: 0 0 4px rgba(255,255,255,0.15); }
+            8%   { color: #fff; border-color: #cfcfcf; background: rgba(255,255,255,0.12); box-shadow: 0 0 18px rgba(255,255,255,0.7); text-shadow: 0 0 10px #fff; }
+            16%  { color: #8a8a8a; border-color: #2a2a2a; background: rgba(120,120,120,0.06); box-shadow: 0 0 8px rgba(0,0,0,0.6); text-shadow: 0 0 4px rgba(255,255,255,0.15); }
+            26%  { color: #fff; border-color: #dcdcdc; background: rgba(255,255,255,0.14); box-shadow: 0 0 20px rgba(255,255,255,0.8); text-shadow: 0 0 12px #fff; }
+            34%  { color: #999; border-color: #2a2a2a; background: rgba(120,120,120,0.07); box-shadow: 0 0 8px rgba(0,0,0,0.5); text-shadow: 0 0 4px rgba(255,255,255,0.15); }
+            48%  { color: #fff; border-color: #eaeaea; background: rgba(255,255,255,0.16); box-shadow: 0 0 24px rgba(255,255,255,0.85); text-shadow: 0 0 14px #fff; }
+            100% { color: #fff; border-color: #fff; background: rgba(255,255,255,0.2); box-shadow: 0 0 28px rgba(255,255,255,1), inset 0 0 16px rgba(255,255,255,0.4); text-shadow: 0 0 16px #fff; }
+        }
+
+        .coming-tape {
+            position: absolute;
+            top: -12px;
+            right: -10px;
+            background: linear-gradient(180deg, rgba(235,235,225,0.92), rgba(205,205,195,0.92));
+            color: #1a1a1a;
+            font-family: monospace;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            padding: 3px 12px;
+            border-radius: 1px;
+            transform: rotate(9deg);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .coming-tape::before,
+        .coming-tape::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 6px;
+            background: rgba(0,0,0,0.06);
+        }
+        .coming-tape::before { left: 0; }
+        .coming-tape::after { right: 0; }
+
         /* En celular (sin hover real) los botones se quedan siempre abiertos, mostrando el nombre */
         @media (hover: none), (pointer: coarse) {
             .neon-btn .btn-label {
@@ -225,6 +298,17 @@
                 width: 100%;
                 padding: 14px 18px;
                 font-size: 18px;
+            }
+
+            .menu-body {
+                width: 100%;
+                max-width: 320px;
+                gap: 14px;
+            }
+
+            .neon-btn.mode-history {
+                font-size: 18px;
+                padding: 16px 18px;
             }
 
             /* el botón de Practice deja de ser fixed y pasa a la columna,
@@ -631,10 +715,13 @@
 <div id="mainMenu">
     <h1 class="menu-title">BulletDasher</h1>
     <p class="menu-subtitle">El juego mas inhumanamente divertido que podrías sufrir</p>
-    <div class="mode-buttons">
-        <button id="playBtn" class="neon-btn"><span class="btn-icon">▶</span><span class="btn-label">CLASSIC</span></button>
-        <button id="metroBtn" class="neon-btn mode-metro"><span class="btn-icon">🚇</span><span class="btn-label">METRO</span></button>
-        <button id="squasteroidsBtn" class="neon-btn mode-squasteroids"><span class="btn-icon">🌌</span><span class="btn-label">SQUASTEROIDS</span></button>
+    <div class="menu-body">
+        <div class="mode-buttons">
+            <button id="playBtn" class="neon-btn"><span class="btn-icon">▶</span><span class="btn-label">CLASSIC</span></button>
+            <button id="metroBtn" class="neon-btn mode-metro"><span class="btn-icon">🚇</span><span class="btn-label">METRO</span></button>
+            <button id="squasteroidsBtn" class="neon-btn mode-squasteroids"><span class="btn-icon">🌌</span><span class="btn-label">SQUASTEROIDS</span></button>
+        </div>
+        <button id="historyBtn" class="neon-btn mode-history"><span class="btn-icon">📖</span><span class="btn-label">MODO HISTORIA</span><span class="coming-tape">Coming Soon</span></button>
     </div>
     <button id="practiceBtn" class="neon-btn mode-practice practice-fixed"><span class="btn-icon">🎯</span><span class="btn-label">PRACTICE MODE</span></button>
 </div>
@@ -823,6 +910,9 @@
     });
     document.getElementById('practiceBtn').addEventListener('click', () => {
         window.location.href = 'PracticeMode.html';
+    });
+    document.getElementById('historyBtn').addEventListener('click', () => {
+        window.location.href = 'History.html';
     });
 </script>
 
