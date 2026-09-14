@@ -709,6 +709,68 @@
             max-width: 340px;
             line-height: 1.4;
         }
+
+        /* ===== Código secreto INFERNO ===== */
+        #infernoCode {
+            position: fixed;
+            left: 50%;
+            bottom: 18px;
+            transform: translateX(-50%);
+            z-index: 50;
+            display: flex;
+            gap: 6px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+
+        #infernoCode.show {
+            opacity: 1;
+        }
+
+        #infernoCode .inferno-letter {
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 22px;
+            color: #ff6a00;
+            text-shadow:
+                0 0 8px #ff4500,
+                0 0 16px #ff6a00,
+                0 0 32px #ff2200;
+            opacity: 0;
+            transform: translateY(6px) scale(0.7);
+            animation: infernoLetterIn 0.25s ease forwards, infernoFlicker 1.4s ease-in-out 0.25s infinite;
+        }
+
+        @keyframes infernoLetterIn {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes infernoFlicker {
+            0%, 100% {
+                text-shadow: 0 0 8px #ff4500, 0 0 16px #ff6a00, 0 0 32px #ff2200;
+            }
+            50% {
+                text-shadow: 0 0 4px #ff4500, 0 0 10px #ff6a00, 0 0 20px #ff2200;
+            }
+        }
+
+        #infernoCode.complete .inferno-letter {
+            animation: infernoLetterIn 0.25s ease forwards, infernoBurst 0.6s ease-in-out infinite;
+            color: #fff2c2;
+        }
+
+        @keyframes infernoBurst {
+            0%, 100% {
+                text-shadow: 0 0 12px #ff6a00, 0 0 24px #ff2200, 0 0 48px #ff0000;
+            }
+            50% {
+                text-shadow: 0 0 20px #fff2c2, 0 0 40px #ff6a00, 0 0 70px #ff2200;
+            }
+        }
     </style>
 </head>
 <body>
@@ -725,6 +787,8 @@
     </div>
     <button id="practiceBtn" class="neon-btn mode-practice practice-fixed"><span class="btn-icon">🎯</span><span class="btn-label">PRACTICE MODE</span></button>
 </div>
+
+<div id="infernoCode"></div>
 
 <button id="achTab">🏆 LOGROS</button>
 <div id="achPanel">
@@ -947,6 +1011,60 @@
         localStorage.clear();
         window.location.reload();
     });
+</script>
+
+<script>
+    // ===== Código secreto: teclear I-N-F-E-R-N-O lleva al Modo Infierno =====
+    (function () {
+        const SECRET = "INFERNO";
+        const display = document.getElementById('infernoCode');
+        let progress = 0;
+        let hideTimeout = null;
+
+        function resetCode() {
+            progress = 0;
+            display.classList.remove('show', 'complete');
+            display.innerHTML = '';
+        }
+
+        function scheduleAutoHide() {
+            clearTimeout(hideTimeout);
+            // si el jugador se queda quieto mucho tiempo a mitad de la palabra, se reinicia
+            hideTimeout = setTimeout(resetCode, 4000);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            // ignorar combinaciones con modificadores (ctrl, alt, meta) para no interferir con atajos
+            if (e.ctrlKey || e.altKey || e.metaKey) return;
+
+            const key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+            const expected = SECRET[progress];
+
+            if (key === expected) {
+                const span = document.createElement('span');
+                span.className = 'inferno-letter';
+                span.textContent = key;
+                display.appendChild(span);
+                display.classList.add('show');
+                progress++;
+                scheduleAutoHide();
+
+                if (progress === SECRET.length) {
+                    clearTimeout(hideTimeout);
+                    display.classList.add('complete');
+                    setTimeout(() => {
+                        window.location.href = 'InfernoMode.html';
+                    }, 650);
+                }
+                return;
+            }
+
+            // cualquier otra tecla presionada en medio de la secuencia la reinicia
+            if (progress > 0) {
+                resetCode();
+            }
+        });
+    })();
 </script>
 </body>
 </html>
