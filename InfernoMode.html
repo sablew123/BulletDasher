@@ -220,6 +220,7 @@
             touch-action: none;
         }
     </style>
+<script src="highscores.js"></script>
 <script src="cosmetics.js"></script>
 <script src="achievements.js"></script>
 </head>
@@ -744,6 +745,7 @@
                 updateUI();
                 stopMusic();
                 menuBtn.classList.remove('hidden');
+                BulletDasherScores.save('inferno', score);
             } else {
                 updateUI();
                 player.invincible = 20;
@@ -1451,6 +1453,7 @@
                 updateUI();
                 stopMusic();
                 menuBtn.classList.remove('hidden');
+                BulletDasherScores.save('inferno', score);
             } else {
                 player.invincible = 20;
             }
@@ -1468,6 +1471,7 @@
             updateUI();
             stopMusic();
             menuBtn.classList.remove('hidden');
+            BulletDasherScores.save('inferno', score);
         }
 
         function addScore(amount) {

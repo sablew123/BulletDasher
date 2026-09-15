@@ -219,6 +219,7 @@
             touch-action: none;
         }
     </style>
+<script src="highscores.js"></script>
 <script src="cosmetics.js"></script>
 <script src="achievements.js"></script>
 </head>
@@ -661,6 +662,11 @@
         const ASTEROID_SPAWN_DIST_MIN = 620; // lejos del jugador, pero repartidos alrededor suyo
         const ASTEROID_SPAWN_DIST_MAX = 950;
 
+        // Si la cantidad de asteroides vivos de un tier supera este umbral, el exceso que esté
+        // fuera de cámara se autodestruye en silencio (sin romperse en pedazos ni escombros)
+        // para no acumular infinitos de fondo. Tier 3 tolera más porque son chiquitos y no dejan hijos.
+        const ASTEROID_TIER_CULL_LIMIT = { 1: 10, 2: 16, 3: 45 };
+
         // ---------- ESCOMBROS DE ASTEROIDE (al desintegrarse un tier 3) ----------
         // En vez de desaparecer de golpe, el asteroide chiquito se rompe en segmentos
         // de su propio borde, que flotan hacia los lados y se desvanecen gradualmente.
@@ -683,6 +689,8 @@
         let berserkerSpawnTimer = 0;
         const BERSERKER_SPAWN_MIN = 360; // 6s a 60fps
         const BERSERKER_SPAWN_MAX = 540; // 9s a 60fps
+        const BERSERKER_MAX_COUNT = 5; // tope de berserkers vivos al mismo tiempo
+        const BERSERKER_RETRY_TIMER = 30; // si ya hay tope, reintenta en medio segundo
         const BERSERKER_SIZE = 14 * 1.4 * 2; // el doble de un rebotón del modo Metro
         const BERSERKER_MAX_HP = 3;
         const BERSERKER_MAX_SPEED = RED_SHOOT_SPEED * 1.3; // 1.3 veces la velocidad de los rojos
@@ -746,6 +754,7 @@
                 updateUI();
                 stopMusic();
                 menuBtn.classList.remove('hidden');
+                BulletDasherScores.save('squasteroids', score);
             } else {
                 updateUI();
                 player.invincible = 20;
@@ -910,6 +919,7 @@
                 updateUI();
                 stopMusic();
                 menuBtn.classList.remove('hidden');
+                BulletDasherScores.save('squasteroids', score);
             } else {
                 player.invincible = 20;
             }
@@ -1076,6 +1086,35 @@
             }
         }
 
+        // Un punto del mundo es "visible" si cae dentro de la pantalla en alguna de sus copias
+        // envueltas (toroidal); si no devuelve ninguna posición, está fuera de cámara.
+        function isWorldPointVisible(wx, wy, margin) {
+            return getWrappedScreenPositions(wx, wy, margin).length > 0;
+        }
+
+        // Cuando un tier de asteroides se pasa de su umbral, borra en silencio (sin romperse
+        // en pedazos ni dejar escombros) el exceso que esté fuera de cámara, hasta volver al
+        // límite. Los que siguen apareciendo (spawnTimer > 0) nunca se tocan.
+        function cullOffscreenAsteroids() {
+            for(const tierKey in ASTEROID_TIER_CULL_LIMIT) {
+                const tier = Number(tierKey);
+                const limit = ASTEROID_TIER_CULL_LIMIT[tier];
+                let count = 0;
+                for(let i=0; i<asteroids.length; i++) if(asteroids[i].tier === tier) count++;
+                if(count <= limit) continue;
+
+                let excess = count - limit;
+                for(let i=asteroids.length-1; i>=0 && excess>0; i--) {
+                    const a = asteroids[i];
+                    if(a.tier !== tier) continue;
+                    if(a.spawnTimer > 0) continue; // todavía apareciendo, no tocar
+                    if(isWorldPointVisible(a.x, a.y, a.radius + 40)) continue; // solo fuera de cámara
+                    asteroids.splice(i, 1);
+                    excess--;
+                }
+            }
+        }
+
         // ---------- ACTUALIZACIÓN DE ASTEROIDES Y ENEMIGOS ----------
         function updateAsteroids() {
             for(let i=0; i<asteroids.length; i++) {
@@ -1204,9 +1243,16 @@
             } else asteroidSpawnTimer--;
 
             if(berserkerSpawnTimer <= 0) {
-                spawnBerserker();
-                berserkerSpawnTimer = randInt(BERSERKER_SPAWN_MIN, BERSERKER_SPAWN_MAX);
+                if(berserkers.length < BERSERKER_MAX_COUNT) {
+                    spawnBerserker();
+                    berserkerSpawnTimer = randInt(BERSERKER_SPAWN_MIN, BERSERKER_SPAWN_MAX);
+                } else {
+                    // ya hay 5 berserkers vivos: no spawnea, reintenta pronto
+                    berserkerSpawnTimer = BERSERKER_RETRY_TIMER;
+                }
             } else berserkerSpawnTimer--;
+
+            cullOffscreenAsteroids();
         }
         
         function resetGame() {

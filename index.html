@@ -328,6 +328,19 @@
                 font-size: 16px;
             }
 
+            #scoresBtn {
+                top: 12px;
+                left: 12px;
+                padding: 8px 10px;
+                font-size: 12px;
+            }
+
+            #scoresPanel {
+                top: 52px;
+                left: 12px;
+                width: 230px;
+            }
+
             #achTab.open {
                 right: min(300px, 86vw);
             }
@@ -548,6 +561,109 @@
             letter-spacing: 1px;
             text-transform: uppercase;
             color: #998a4d;
+        }
+
+        /* ===== Botón de puntajes máximos (esquina superior izquierda) ===== */
+        #scoresBtn {
+            position: fixed;
+            top: 18px;
+            left: 18px;
+            z-index: 30;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(0, 255, 140, 0.08);
+            color: #7dffc0;
+            border: 2px solid #00ff8c;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,255,140,0.6), inset 0 0 8px rgba(0,255,140,0.2);
+            text-shadow: 0 0 8px #00ff8c;
+            transition: background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        #scoresBtn:hover {
+            background: rgba(0,255,140,0.22);
+            box-shadow: 0 0 20px rgba(0,255,140,0.9), inset 0 0 12px rgba(0,255,140,0.4);
+            color: #d9ffec;
+            transform: scale(1.04);
+        }
+
+        #scoresPanel {
+            position: fixed;
+            top: 66px;
+            left: 18px;
+            z-index: 29;
+            width: 260px;
+            max-width: calc(100vw - 36px);
+            background: rgba(4, 10, 7, 0.96);
+            border: 2px solid #00ff8c;
+            border-radius: 10px;
+            box-shadow: 0 0 24px rgba(0,255,140,0.3);
+            padding: 14px 16px 12px;
+            font-family: monospace;
+            color: #cfffe4;
+            transform-origin: top left;
+            transform: scaleY(0.6);
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            pointer-events: none;
+            transition: transform 0.25s ease, opacity 0.2s ease, max-height 0.25s ease;
+        }
+
+        #scoresPanel.open {
+            transform: scaleY(1);
+            opacity: 1;
+            max-height: 320px;
+            pointer-events: auto;
+        }
+
+        .scores-panel-title {
+            text-align: center;
+            font-size: 13px;
+            letter-spacing: 2px;
+            color: #7dffc0;
+            text-shadow: 0 0 8px #00ff8c;
+            margin-bottom: 10px;
+        }
+
+        .score-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 7px 2px;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid rgba(0,255,140,0.15);
+        }
+
+        .score-row:last-child {
+            border-bottom: none;
+        }
+
+        .score-row .score-label {
+            color: #7dffc0;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .score-row .score-value {
+            color: #eafff3;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .score-row.score-locked .score-label,
+        .score-row.score-locked .score-value {
+            color: #3f6d55;
+            text-shadow: none;
         }
 
         /* ===== Botón de configuración (engranaje) ===== */
@@ -788,6 +904,12 @@
     <button id="practiceBtn" class="neon-btn mode-practice practice-fixed"><span class="btn-icon">🎯</span><span class="btn-label">PRACTICE MODE</span></button>
 </div>
 
+<button id="scoresBtn" title="Puntajes máximos"><span class="btn-icon">🏅</span><span>PUNTAJES</span></button>
+<div id="scoresPanel">
+    <div class="scores-panel-title">🏅 PUNTAJES MÁXIMOS</div>
+    <div id="scoresList"></div>
+</div>
+
 <div id="infernoCode"></div>
 
 <button id="achTab">🏆 LOGROS</button>
@@ -820,6 +942,7 @@
     <div class="settings-disclaimer">este proyecto está hecho con uso de IAs y prompts 100% controlados por el creador</div>
 </div>
 
+<script src="highscores.js"></script>
 <script src="cosmetics.js"></script>
 <script src="achievements.js"></script>
 <script>
@@ -960,6 +1083,47 @@
         achTab.classList.toggle('open');
         achPanel.classList.toggle('open');
     });
+</script>
+
+<script>
+    // ===== Ventanita de puntajes máximos =====
+    (function () {
+        const scoresBtn = document.getElementById('scoresBtn');
+        const scoresPanel = document.getElementById('scoresPanel');
+        const scoresList = document.getElementById('scoresList');
+
+        const MODES = [
+            { key: 'classic', label: 'CLASSIC' },
+            { key: 'metro', label: 'METRO' },
+            { key: 'squasteroids', label: 'SQUASTEROIDS' },
+            { key: 'inferno', label: 'INFERNO', secret: true }
+        ];
+
+        function padScore(value) {
+            const n = Math.max(0, Math.floor(Number(value) || 0));
+            return String(n).padStart(10, '0');
+        }
+
+        function renderScores() {
+            const data = (window.BulletDasherScores ? BulletDasherScores.getAll() : {}) || {};
+            scoresList.innerHTML = MODES.map(mode => {
+                const hasScore = Object.prototype.hasOwnProperty.call(data, mode.key) && typeof data[mode.key] === 'number';
+                const locked = mode.secret && !hasScore;
+                const label = locked ? '???????' : mode.label;
+                const value = padScore(hasScore ? data[mode.key] : 0);
+                return `<div class="score-row${locked ? ' score-locked' : ''}">` +
+                    `<span class="score-label">${label}</span>` +
+                    `<span class="score-value">${value}</span>` +
+                `</div>`;
+            }).join('');
+        }
+
+        scoresBtn.addEventListener('click', () => {
+            const opening = !scoresPanel.classList.contains('open');
+            if (opening) renderScores();
+            scoresPanel.classList.toggle('open', opening);
+        });
+    })();
 </script>
 
 <script>

@@ -211,6 +211,7 @@
             touch-action: none;
         }
     </style>
+<script src="highscores.js"></script>
 <script src="cosmetics.js"></script>
 <script src="achievements.js"></script>
 </head>
@@ -532,6 +533,7 @@
                 updateUI();
                 stopMusic();
                 menuBtn.classList.remove('hidden');
+                BulletDasherScores.save('classic', score);
             } else {
                 player.invincible = 20;
             }

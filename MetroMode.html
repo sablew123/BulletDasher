@@ -257,6 +257,7 @@
             touch-action: none;
         }
     </style>
+<script src="highscores.js"></script>
 <script src="cosmetics.js"></script>
 <script src="achievements.js"></script>
 </head>
@@ -772,6 +773,7 @@
                 stopMusic();
                 menuBtn.classList.remove('hidden');
                 canvas.classList.remove('train-warning');
+                BulletDasherScores.save('metro', score);
             } else {
                 player.invincible = 20;
             }
