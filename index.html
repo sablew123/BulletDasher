@@ -349,6 +349,15 @@
                 width: min(300px, 86vw);
                 right: min(-320px, -86vw - 20px);
             }
+
+            #modesTab.open {
+                left: min(300px, 86vw);
+            }
+
+            #modesPanel {
+                width: min(300px, 86vw);
+                left: min(-320px, -86vw - 20px);
+            }
         }
 
         /* ===== Barra de logros retráctil ===== */
@@ -666,6 +675,123 @@
             text-shadow: none;
         }
 
+        /* ===== Pestaña retráctil de MODOS (info de cada modo) ===== */
+        #modesTab {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            z-index: 40;
+            background: rgba(255, 150, 0, 0.10);
+            border: 2px solid #ff9900;
+            border-left: none;
+            border-radius: 0 10px 10px 0;
+            color: #ffcc80;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 2px;
+            font-size: 15px;
+            padding: 14px 8px;
+            writing-mode: vertical-rl;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,150,0,0.6), inset 0 0 8px rgba(255,150,0,0.25);
+            text-shadow: 0 0 8px #ff9900;
+            transition: background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, left 0.35s ease;
+        }
+
+        #modesTab:hover {
+            background: rgba(255, 150, 0, 0.22);
+            box-shadow: 0 0 20px rgba(255,150,0,0.9), inset 0 0 12px rgba(255,150,0,0.4);
+            color: #ffe0b3;
+        }
+
+        #modesTab.open {
+            left: 300px;
+        }
+
+        #modesPanel {
+            position: fixed;
+            top: 0;
+            left: -320px;
+            width: 300px;
+            height: 100vh;
+            background: rgba(10, 6, 0, 0.94);
+            border-right: 2px solid #ff9900;
+            box-shadow: 10px 0 30px rgba(255,150,0,0.25);
+            z-index: 39;
+            overflow-y: auto;
+            padding: 70px 16px 24px;
+            transition: left 0.35s ease;
+        }
+
+        #modesPanel.open {
+            left: 0;
+        }
+
+        #modesPanel::-webkit-scrollbar {
+            width: 6px;
+        }
+        #modesPanel::-webkit-scrollbar-thumb {
+            background: rgba(255,150,0,0.5);
+            border-radius: 3px;
+        }
+
+        .modes-panel-title {
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: #ffcc80;
+            font-size: 20px;
+            letter-spacing: 3px;
+            text-shadow: 0 0 10px #ff9900, 0 0 20px #ff9900;
+        }
+
+        .mode-card {
+            background: rgba(255,150,0,0.06);
+            border: 1px solid rgba(255,150,0,0.5);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 14px;
+        }
+        .mode-card:last-child { margin-bottom: 0; }
+
+        .mode-card-name {
+            font-size: 15px;
+            font-weight: bold;
+            letter-spacing: 1.5px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 6px currentColor;
+        }
+
+        .mode-card-tagline {
+            font-size: 11.5px;
+            color: #e8c9a0;
+            margin-bottom: 8px;
+            line-height: 1.45;
+        }
+
+        .mode-card ul {
+            margin: 0;
+            padding-left: 16px;
+        }
+        .mode-card li {
+            font-size: 11px;
+            color: #d8b98c;
+            margin-bottom: 6px;
+            line-height: 1.4;
+        }
+        .mode-card li:last-child { margin-bottom: 0; }
+
+        .mode-card.mode-classic .mode-card-name { color: #ff6666; }
+        .mode-card.mode-metro .mode-card-name { color: #4dd6ff; }
+        .mode-card.mode-squasteroids .mode-card-name { color: #c98dff; }
+        .mode-card.mode-inferno .mode-card-name { color: #ff3333; }
+        .mode-card.mode-inferno .mode-card-tagline { color: #ffb3b3; font-style: italic; }
+        .mode-card.mode-inferno.locked .mode-card-name { color: #7a4a2a; }
+        .mode-card.mode-inferno.locked .mode-card-tagline { color: #6b5138; }
+
         /* ===== Botón de configuración (engranaje) ===== */
         #settingsBtn {
             position: fixed;
@@ -912,6 +1038,12 @@
 
 <div id="infernoCode"></div>
 
+<button id="modesTab">🧭 MODOS</button>
+<div id="modesPanel">
+    <div class="modes-panel-title">🧭 MODOS</div>
+    <div id="modesList"></div>
+</div>
+
 <button id="achTab">🏆 LOGROS</button>
 <div id="achPanel">
     <div class="ach-panel-title">🏆 LOGROS</div>
@@ -1122,6 +1254,86 @@
             const opening = !scoresPanel.classList.contains('open');
             if (opening) renderScores();
             scoresPanel.classList.toggle('open', opening);
+        });
+    })();
+</script>
+
+<script>
+    // ===== Panel de información de los modos y sus desafíos =====
+    (function () {
+        const modesTab = document.getElementById('modesTab');
+        const modesPanel = document.getElementById('modesPanel');
+        const modesList = document.getElementById('modesList');
+
+        const MODES_INFO = [
+            {
+                id: 'classic',
+                name: 'CLASSIC',
+                tagline: 'El modo base de BulletDasher: sobrevive, dashea y no dejes que te atrapen.',
+                challenges: [
+                    'Redst: enemigos rojos que se detienen un instante a apuntar antes de lanzarse en línea recta hacia ti.',
+                    'Purps: enemigos lentos y morados que deambulan sin descanso.',
+                    'Láseres de advertencia: cargan un momento y cruzan la pantalla desde los bordes.',
+                    'Sombra Global: una zona segura se mueve sola por el mapa — llega a tiempo o quédate afuera cuando se resuelva.'
+                ]
+            },
+            {
+                id: 'metro',
+                name: 'METRO',
+                tagline: 'Todo lo de Classic, pero dentro de un vagón que arranca, frena y abre sus puertas.',
+                challenges: [
+                    'El vagón se detiene en cada parada: al abrirse las puertas entran oleadas de Redst, Purps y algún Rebotón.',
+                    'Rebotones: pasajeros tranquilos e inmortales que rebotan como en un pong hasta que llega su parada.',
+                    'Láseres móviles: cargan pegados a un costado del vagón y cruzan horizontalmente a toda velocidad.',
+                    'Banda de Extinción: una franja vertical recorre el vagón de lado a lado — quedar afuera cuando termine sale caro.'
+                ]
+            },
+            {
+                id: 'squasteroids',
+                name: 'SQUASTEROIDS',
+                tagline: 'Un espacio infinito y no-euclídeo: sales por un borde y reapareces por el contrario.',
+                challenges: [
+                    'Mundo toroidal: el mapa se envuelve en los 4 bordes, sin teletransportes visibles.',
+                    'Asteroides por niveles: los grandes solo los rompen los Redst al chocarlos; tu dash rompe los medianos y chicos.',
+                    'Purps en anillo alrededor de cada asteroide recién aparecido.',
+                    'Berserkers: enemigos cuerpo a cuerpo con 3 vidas que aceleran directo hacia ti como un misil térmico, y giran y parpadean cada vez más rápido mientras menos vidas les quedan.'
+                ]
+            },
+            {
+                id: 'inferno',
+                name: 'INFERNO',
+                secret: true,
+                tagline: 'El modo easter egg de BulletDasher. No es un cuarto modo: es la prueba real, la que existe para enseñarte que no importa cuánto domines Classic, Metro o Squasteroids — nunca vas a ser un buen BulletDasher.',
+                lockedTagline: 'Se dice que hay algo más allá de Classic, Metro y Squasteroids. Nadie que lo haya encontrado quiere hablar de ello.',
+                challenges: [
+                    'Fase toroidal: los Berserkers se rebelan en manada mientras láseres-lazo dibujan polígonos que se cruzan a sí mismos.',
+                    'Fase de aviso (ULTRAEXTINCIÓN): la pantalla se tiñe de rojo y crece el REFUGIO, un cuadro amarillo — quedarte afuera cuando el tiempo llegue a cero es muerte instantánea, ignora hasta la invencibilidad.',
+                    'Fase plana: 10 segundos donde Classic y Metro chocan de frente — Redst cada 0.4 segundos, Purps y láseres de ambos tipos a la vez.',
+                    'Las tres fases se repiten en bucle, cada vez más implacables.'
+                ]
+            }
+        ];
+
+        function renderModes() {
+            const infernoUnlocked = !!(window.BulletDasherScores && BulletDasherScores.get('inferno') !== null);
+            modesList.innerHTML = MODES_INFO.map(mode => {
+                const locked = !!mode.secret && !infernoUnlocked;
+                const name = locked ? '???????' : mode.name;
+                const tagline = locked ? mode.lockedTagline : mode.tagline;
+                const challengesHtml = locked ? '' : `<ul>${mode.challenges.map(c => `<li>${c}</li>`).join('')}</ul>`;
+                return `<div class="mode-card mode-${mode.id}${locked ? ' locked' : ''}">` +
+                    `<div class="mode-card-name">${name}</div>` +
+                    `<div class="mode-card-tagline">${tagline}</div>` +
+                    challengesHtml +
+                `</div>`;
+            }).join('');
+        }
+
+        modesTab.addEventListener('click', () => {
+            const opening = !modesPanel.classList.contains('open');
+            if (opening) renderModes();
+            modesTab.classList.toggle('open', opening);
+            modesPanel.classList.toggle('open', opening);
         });
     })();
 </script>
