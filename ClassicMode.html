@@ -463,6 +463,20 @@
         const FRAMES_PER_SECOND = 60;
         const TIME_SCORE_AMOUNT = 5; // puntos que suma cada segundo sobrevivido
         let gameTimeFrames = 0; // frames transcurridos de partida (para el HUD de tiempo)
+
+        // ---------- DATOS DE LA PARTIDA (se guardan junto al mejor puntaje) ----------
+        let livesLost = 0;    // vidas perdidas en esta partida
+        let livesHealed = 0;  // vidas recuperadas en esta partida
+
+        // Foto de los datos de ESTA partida, para mandarla junto al puntaje
+        function currentRunStats() {
+            return {
+                timeFrames: gameTimeFrames,
+                extinctions: extinctionCount,
+                livesLost: livesLost,
+                livesHealed: livesHealed
+            };
+        }
         
         function formatGameTime(frames) {
             const totalSeconds = Math.floor(frames / FRAMES_PER_SECOND);
@@ -513,6 +527,7 @@
         function healPlayer() {
             if (hp < 3) {
                 hp++;
+                livesHealed++;
                 updateUI();
                 playHealSound();
                 return true;
@@ -523,6 +538,7 @@
         function damagePlayer() {
             if(player.invincible > 0 || gameOver) return;
             hp--;
+            livesLost++;
             tookDamageThisRun = true; // logro "Dash God": ya no se puede conseguir esta partida
             Cosmetics.onPlayerHit(player.x, player.y); // skin-hit-rings
             triggerDamageFlash();
@@ -533,7 +549,7 @@
                 updateUI();
                 stopMusic();
                 menuBtn.classList.remove('hidden');
-                BulletDasherScores.save('classic', score);
+                BulletDasherScores.save('classic', score, currentRunStats());
             } else {
                 player.invincible = 20;
             }
@@ -577,6 +593,8 @@
             gameOver = false;
             timeScoreCounter = 0;
             gameTimeFrames = 0;
+            livesLost = 0;
+            livesHealed = 0;
             player.x = canvas.width/2;
             player.y = canvas.height/2;
             player.invincible = 0;

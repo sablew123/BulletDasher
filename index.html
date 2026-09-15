@@ -608,7 +608,7 @@
             top: 66px;
             left: 18px;
             z-index: 29;
-            width: 260px;
+            width: 288px;
             max-width: calc(100vw - 36px);
             background: rgba(4, 10, 7, 0.96);
             border: 2px solid #00ff8c;
@@ -629,7 +629,8 @@
         #scoresPanel.open {
             transform: scaleY(1);
             opacity: 1;
-            max-height: 320px;
+            max-height: min(72vh, 560px);
+            overflow-y: auto;
             pointer-events: auto;
         }
 
@@ -673,6 +674,71 @@
         .score-row.score-locked .score-value {
             color: #3f6d55;
             text-shadow: none;
+        }
+
+        /* ===== Bloque por modo: puntaje + datos de esa partida ===== */
+        .score-block {
+            border-bottom: 1px solid rgba(0,255,140,0.15);
+            padding-bottom: 6px;
+            margin-bottom: 6px;
+        }
+
+        .score-block:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+
+        .score-block .score-row {
+            border-bottom: none;
+            padding: 6px 2px 4px;
+        }
+
+        .score-stats {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            padding: 5px 8px 6px;
+            margin: 0 2px;
+            border-left: 2px solid rgba(0,255,140,0.35);
+            background: rgba(0,255,140,0.05);
+            border-radius: 0 6px 6px 0;
+        }
+
+        .score-stat {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            font-size: 10.5px;
+            letter-spacing: 0.3px;
+            color: #8fd9b4;
+        }
+
+        .score-stat .stat-value {
+            color: #d9ffec;
+            font-weight: bold;
+        }
+
+        .score-block.score-empty .score-stats {
+            border-left-color: rgba(0,255,140,0.15);
+            background: rgba(0,255,140,0.02);
+        }
+
+        .score-block.score-empty .score-stat,
+        .score-block.score-empty .score-stat .stat-value {
+            color: #4c7d64;
+        }
+
+        .score-block.score-hidden .score-stats {
+            display: none;
+        }
+
+        .score-empty-note {
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            color: #4c7d64;
+            padding: 2px 10px 4px;
         }
 
         /* ===== Pestaña retráctil de MODOS (info de cada modo) ===== */
@@ -1224,11 +1290,30 @@
         const scoresPanel = document.getElementById('scoresPanel');
         const scoresList = document.getElementById('scoresList');
 
+        // Cada modo lista los datos que guarda junto a su mejor puntaje.
+        // Ojo: son los datos DE ESA partida, no los mejores de cada dato por separado.
+        const COMMON_STATS = [
+            { key: 'livesLost', icon: '💔', label: 'Vidas perdidas' },
+            { key: 'livesHealed', icon: '💚', label: 'Vidas recuperadas' }
+        ];
+
         const MODES = [
-            { key: 'classic', label: 'CLASSIC' },
-            { key: 'metro', label: 'METRO' },
-            { key: 'squasteroids', label: 'SQUASTEROIDS' },
-            { key: 'inferno', label: 'INFERNO', secret: true }
+            {
+                key: 'classic', label: 'CLASSIC',
+                stats: [{ key: 'extinctions', icon: '☠️', label: 'Extinciones sobrevividas' }]
+            },
+            {
+                key: 'metro', label: 'METRO',
+                stats: [{ key: 'extinctions', icon: '☠️', label: 'Extinciones sobrevividas' }]
+            },
+            {
+                key: 'squasteroids', label: 'SQUASTEROIDS',
+                stats: [{ key: 'berserkers', icon: '👊', label: 'Berserkers mano a mano' }]
+            },
+            {
+                key: 'inferno', label: 'INFERNO', secret: true,
+                stats: [{ key: 'cycles', icon: '🔁', label: 'Ciclos completados' }]
+            }
         ];
 
         function padScore(value) {
@@ -1236,16 +1321,53 @@
             return String(n).padStart(10, '0');
         }
 
+        function formatFrames(frames) {
+            if (window.BulletDasherScores && BulletDasherScores.formatTime) {
+                return BulletDasherScores.formatTime(frames);
+            }
+            const totalSeconds = Math.floor((Number(frames) || 0) / 60);
+            return Math.floor(totalSeconds / 60) + ':' + String(totalSeconds % 60).padStart(2, '0');
+        }
+
+        function statRow(icon, label, value) {
+            return `<div class="score-stat"><span>${icon} ${label}</span><span class="stat-value">${value}</span></div>`;
+        }
+
         function renderScores() {
-            const data = (window.BulletDasherScores ? BulletDasherScores.getAll() : {}) || {};
+            const entries = (window.BulletDasherScores && BulletDasherScores.getAllEntries)
+                ? (BulletDasherScores.getAllEntries() || {})
+                : {};
+
             scoresList.innerHTML = MODES.map(mode => {
-                const hasScore = Object.prototype.hasOwnProperty.call(data, mode.key) && typeof data[mode.key] === 'number';
-                const locked = mode.secret && !hasScore;
+                const entry = entries[mode.key] || null;
+                const locked = !!mode.secret && !entry;
                 const label = locked ? '???????' : mode.label;
-                const value = padScore(hasScore ? data[mode.key] : 0);
-                return `<div class="score-row${locked ? ' score-locked' : ''}">` +
+                const value = padScore(entry ? entry.score : 0);
+                const stats = (entry && entry.stats) ? entry.stats : {};
+
+                const rowHtml = `<div class="score-row${locked ? ' score-locked' : ''}">` +
                     `<span class="score-label">${label}</span>` +
                     `<span class="score-value">${value}</span>` +
+                `</div>`;
+
+                // El modo secreto no revela nada mientras siga bloqueado
+                if (locked) {
+                    return `<div class="score-block score-hidden">${rowHtml}</div>`;
+                }
+
+                // Sin récord todavía: se muestran los campos en blanco, para que se vea qué se guarda
+                const empty = !entry;
+                const dash = '—';
+                const statsHtml = [
+                    statRow('⏱️', 'Tiempo de la partida', empty ? dash : formatFrames(stats.timeFrames)),
+                    ...mode.stats.map(st => statRow(st.icon, st.label, empty ? dash : (Number(stats[st.key]) || 0))),
+                    ...COMMON_STATS.map(st => statRow(st.icon, st.label, empty ? dash : (Number(stats[st.key]) || 0)))
+                ].join('');
+
+                return `<div class="score-block${empty ? ' score-empty' : ''}">` +
+                    rowHtml +
+                    `<div class="score-stats">${statsHtml}</div>` +
+                    (empty ? `<div class="score-empty-note">Sin récord todavía</div>` : '') +
                 `</div>`;
             }).join('');
         }

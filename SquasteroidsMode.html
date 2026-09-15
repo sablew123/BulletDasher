@@ -491,6 +491,21 @@
         const FRAMES_PER_SECOND = 60;
         const TIME_SCORE_AMOUNT = 5;
         let gameTimeFrames = 0;
+
+        // ---------- DATOS DE LA PARTIDA (se guardan junto al mejor puntaje) ----------
+        let livesLost = 0;            // vidas perdidas en esta partida
+        let livesHealed = 0;          // vidas recuperadas en esta partida
+        let berserkersDefeated = 0;   // Berserkers rematados mano a mano (con el dash)
+
+        // Foto de los datos de ESTA partida, para mandarla junto al puntaje
+        function currentRunStats() {
+            return {
+                timeFrames: gameTimeFrames,
+                berserkers: berserkersDefeated,
+                livesLost: livesLost,
+                livesHealed: livesHealed
+            };
+        }
         
         // ---- Estado de logros (por partida) ----
         let tookDamageThisRun = false; // logro "Dash God": ni un solo golpe en toda la partida
@@ -739,6 +754,7 @@
         // dirección en la que iba el berserker, y el berserker rebota con el choque.
         function berserkerHitPlayer(b) {
             if(player.invincible > 0 || gameOver) return;
+            livesLost += Math.min(2, hp); // solo cuentan las vidas que realmente tenía
             hp -= 2;
             tookDamageThisRun = true; // logro "Dash God": ya no se puede conseguir esta partida
             { const hitPos = worldToScreen(player.x, player.y); Cosmetics.onPlayerHit(hitPos.x, hitPos.y); } // skin-hit-rings
@@ -754,7 +770,7 @@
                 updateUI();
                 stopMusic();
                 menuBtn.classList.remove('hidden');
-                BulletDasherScores.save('squasteroids', score);
+                BulletDasherScores.save('squasteroids', score, currentRunStats());
             } else {
                 updateUI();
                 player.invincible = 20;
@@ -899,6 +915,7 @@
         function healPlayer() {
             if (hp < 3) {
                 hp++;
+                livesHealed++;
                 updateUI();
                 playHealSound();
                 return true;
@@ -909,6 +926,7 @@
         function damagePlayer() {
             if(player.invincible > 0 || gameOver) return;
             hp--;
+            livesLost++;
             tookDamageThisRun = true; // logro "Dash God": ya no se puede conseguir esta partida
             { const hitPos = worldToScreen(player.x, player.y); Cosmetics.onPlayerHit(hitPos.x, hitPos.y); } // skin-hit-rings
             triggerDamageFlash();
@@ -919,7 +937,7 @@
                 updateUI();
                 stopMusic();
                 menuBtn.classList.remove('hidden');
-                BulletDasherScores.save('squasteroids', score);
+                BulletDasherScores.save('squasteroids', score, currentRunStats());
             } else {
                 player.invincible = 20;
             }
@@ -1261,6 +1279,9 @@
             gameOver = false;
             timeScoreCounter = 0;
             gameTimeFrames = 0;
+            livesLost = 0;
+            livesHealed = 0;
+            berserkersDefeated = 0;
             player.x = WORLD_W/2;
             player.y = WORLD_H/2;
             player.invincible = 0;
@@ -1427,6 +1448,7 @@
                         berserkers.splice(i, 1);
                         i--;
                         addScore(120);
+                        berserkersDefeated++; // derrotado mano a mano, con el dash
                         spawnHealthItem(bx, by);
                     }
                 }

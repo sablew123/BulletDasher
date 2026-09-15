@@ -508,6 +508,21 @@
         const FRAMES_PER_SECOND = 60;
         const TIME_SCORE_AMOUNT = 5;
         let gameTimeFrames = 0;
+
+        // ---------- DATOS DE LA PARTIDA (se guardan junto al mejor puntaje) ----------
+        let livesLost = 0;         // vidas perdidas en esta partida
+        let livesHealed = 0;       // vidas recuperadas en esta partida
+        let cyclesCompleted = 0;   // ciclos completos (toroidal -> ULTRAEXTINCIÓN -> fase plana)
+
+        // Foto de los datos de ESTA partida, para mandarla junto al puntaje
+        function currentRunStats() {
+            return {
+                timeFrames: gameTimeFrames,
+                cycles: cyclesCompleted,
+                livesLost: livesLost,
+                livesHealed: livesHealed
+            };
+        }
         
         let tookDamageThisRun = false;
         let purpKillsThisRun = 0;
@@ -735,6 +750,7 @@
 
         function berserkerHitPlayer(b) {
             if(player.invincible > 0 || gameOver) return;
+            livesLost += Math.min(2, hp); // solo cuentan las vidas que realmente tenía
             hp -= 2;
             tookDamageThisRun = true;
             { const hitPos = worldToScreen(player.x, player.y); Cosmetics.onPlayerHit(hitPos.x, hitPos.y); }
@@ -745,7 +761,7 @@
                 updateUI();
                 stopMusic();
                 menuBtn.classList.remove('hidden');
-                BulletDasherScores.save('inferno', score);
+                BulletDasherScores.save('inferno', score, currentRunStats());
             } else {
                 updateUI();
                 player.invincible = 20;
@@ -1433,6 +1449,7 @@
         function healPlayer() {
             if (hp < 3) {
                 hp++;
+                livesHealed++;
                 updateUI();
                 playHealSound();
                 return true;
@@ -1443,6 +1460,7 @@
         function damagePlayer() {
             if(player.invincible > 0 || gameOver) return;
             hp--;
+            livesLost++;
             tookDamageThisRun = true;
             { const hitPos = worldToScreen(player.x, player.y); Cosmetics.onPlayerHit(hitPos.x, hitPos.y); }
             triggerDamageFlash();
@@ -1453,7 +1471,7 @@
                 updateUI();
                 stopMusic();
                 menuBtn.classList.remove('hidden');
-                BulletDasherScores.save('inferno', score);
+                BulletDasherScores.save('inferno', score, currentRunStats());
             } else {
                 player.invincible = 20;
             }
@@ -1463,6 +1481,7 @@
         // Ignora invencibilidad a propósito.
         function instaKillPlayer() {
             if(gameOver) return;
+            livesLost += Math.max(0, hp); // la ULTRAEXTINCIÓN se lleva todo lo que quedaba
             hp = 0;
             gameOver = true;
             tookDamageThisRun = true;
@@ -1471,7 +1490,7 @@
             updateUI();
             stopMusic();
             menuBtn.classList.remove('hidden');
-            BulletDasherScores.save('inferno', score);
+            BulletDasherScores.save('inferno', score, currentRunStats());
         }
 
         function addScore(amount) {
@@ -1557,6 +1576,8 @@
         }
 
         function exitFlatPhase() {
+            // Salir de la fase plana cierra el bucle completo: toroidal -> ULTRAEXTINCIÓN -> plana
+            cyclesCompleted++;
             gamePhase = 'toroidal';
             phaseTimer = TOROIDAL_PHASE_DURATION;
 
@@ -1650,6 +1671,9 @@
             gameOver = false;
             timeScoreCounter = 0;
             gameTimeFrames = 0;
+            livesLost = 0;
+            livesHealed = 0;
+            cyclesCompleted = 0;
 
             gamePhase = 'toroidal';
             phaseTimer = TOROIDAL_PHASE_DURATION;
