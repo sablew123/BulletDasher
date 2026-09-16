@@ -1018,6 +1018,164 @@
             line-height: 1.4;
         }
 
+        /* ===== Botón de CARTAS (esquina superior derecha) ===== */
+        /* z-index 20: queda por debajo del panel de logros (25) para que, al
+           abrirlos, la barra de logros lo tape. Por lo demás vive en la misma
+           capa visual que el botón de puntajes. */
+        #cartasBtn {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            z-index: 20;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 0, 200, 0.08);
+            color: #ff8ae6;
+            border: 2px solid #ff00c8;
+            padding: 10px 14px;
+            font-size: 14px;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 2px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,0,200,0.6), inset 0 0 8px rgba(255,0,200,0.2);
+            text-shadow: 0 0 8px #ff00c8;
+            transition: background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        #cartasBtn:hover {
+            background: rgba(255,0,200,0.22);
+            box-shadow: 0 0 20px rgba(255,0,200,0.9), inset 0 0 12px rgba(255,0,200,0.4);
+            color: #ffd6f6;
+            transform: scale(1.04);
+        }
+
+        /* ===== Ventana de CARTAS (va encima de todo) ===== */
+        #cartasOverlay {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            background: rgba(0,0,0,0.78);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        #cartasOverlay.open {
+            display: flex;
+        }
+
+        #cartasWindow {
+            position: relative;
+            width: 100%;
+            max-width: 560px;
+            max-height: min(80vh, 640px);
+            display: flex;
+            flex-direction: column;
+            background: rgba(14, 2, 12, 0.96);
+            border: 2px solid #ff00c8;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(255,0,200,0.35);
+            padding: 26px 20px 18px;
+            font-family: monospace;
+            color: #ffd6f6;
+        }
+
+        .cartas-close {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #ff8ae6;
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 4px 8px;
+            transition: color 0.2s ease, text-shadow 0.2s ease;
+        }
+
+        .cartas-close:hover {
+            color: #ffffff;
+            text-shadow: 0 0 8px #ff00c8;
+        }
+
+        .cartas-title {
+            flex-shrink: 0;
+            text-align: center;
+            font-size: 18px;
+            letter-spacing: 3px;
+            color: #ff8ae6;
+            text-shadow: 0 0 8px #ff00c8, 0 0 18px #ff00c8;
+            margin-bottom: 16px;
+        }
+
+        /* Zona que hace scroll: la PECERA va dentro, así que sube junto
+           con el texto al usar la rueda del mouse. */
+        .cartas-scroll {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .cartas-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .cartas-scroll::-webkit-scrollbar-thumb {
+            background: rgba(255,0,200,0.5);
+            border-radius: 3px;
+        }
+
+        /* La PECERA: caja alargada de lado a lado. Vacía por ahora. */
+        #pecera {
+            width: 100%;
+            height: 150px;
+            background: rgba(255, 0, 200, 0.05);
+            border: 2px solid rgba(255, 0, 200, 0.7);
+            border-radius: 8px;
+            box-shadow: inset 0 0 18px rgba(255,0,200,0.18);
+            margin-bottom: 18px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #cartasTexto {
+            font-size: 13px;
+            line-height: 1.7;
+            color: #ffd6f6;
+            letter-spacing: 0.4px;
+            white-space: pre-wrap;
+            padding-bottom: 4px;
+        }
+
+        #cartasTexto p {
+            margin: 0 0 12px;
+        }
+
+        #cartasTexto .carta-firma {
+            margin-top: 14px;
+            text-align: right;
+            font-size: 12px;
+            color: #ff8ae6;
+            text-shadow: 0 0 6px rgba(255,0,200,0.5);
+        }
+
+        @media (max-width: 520px) {
+            #cartasBtn {
+                font-size: 12px;
+                padding: 8px 10px;
+                letter-spacing: 1px;
+            }
+            #pecera {
+                height: 120px;
+            }
+        }
+
         /* ===== Código secreto INFERNO ===== */
         #infernoCode {
             position: fixed;
@@ -1119,6 +1277,19 @@
     <div id="achList"></div>
 </div>
 
+<button id="cartasBtn" title="Cartas"><span class="btn-icon">👀</span><span>Cartas</span></button>
+<div id="cartasOverlay">
+    <div id="cartasWindow">
+        <button class="cartas-close" id="cartasCloseBtn">✕</button>
+        <div class="cartas-title">CARTAS</div>
+        <div class="cartas-scroll">
+            <!-- PECERA: caja vacía por ahora. En el futuro la llena Pecera.js -->
+            <div id="pecera"></div>
+            <div id="cartasTexto"></div>
+        </div>
+    </div>
+</div>
+
 <button id="settingsBtn" title="Configuración">⚙️</button>
 <div id="settingsOverlay">
     <div id="settingsWindow">
@@ -1143,6 +1314,8 @@
 <script src="highscores.js"></script>
 <script src="cosmetics.js"></script>
 <script src="achievements.js"></script>
+<script src="Cartas.js"></script>
+<script src="Pecera.js"></script>
 <script>
     const achievements = [
         { id: "classical-music", name: "Classical Music", desc: "Sobrevive en Classic Mode el tiempo suficiente para que la canción de fondo se repita." },
@@ -1476,6 +1649,95 @@
     document.getElementById('historyBtn').addEventListener('click', () => {
         window.location.href = 'History.html';
     });
+</script>
+
+<script>
+    // ===== Ventana de CARTAS =====
+    (function () {
+        const cartasBtn = document.getElementById('cartasBtn');
+        const cartasOverlay = document.getElementById('cartasOverlay');
+        const cartasCloseBtn = document.getElementById('cartasCloseBtn');
+        const cartasTexto = document.getElementById('cartasTexto');
+
+        // Texto de emergencia por si Cartas.js no carga
+        // (pasa al abrir el index con doble clic, sin servidor local).
+        const CARTA_FALLBACK = {
+            texto: ["No se encontro Cartas.js, o no tiene ninguna carta escrita."],
+            firma: null
+        };
+
+        // La carta se elige de nuevo CADA VEZ que se abre la ventana
+        // (ver elegirCarta() y el listener de cartasBtn más abajo).
+        let cartaElegida = null;
+
+        function pintarCarta(carta) {
+            cartasTexto.innerHTML = '';
+            const parrafos = Array.isArray(carta.texto) ? carta.texto : [carta.texto];
+            parrafos.forEach(t => {
+                const p = document.createElement('p');
+                p.textContent = t;
+                cartasTexto.appendChild(p);
+            });
+            if (carta.firma) {
+                const f = document.createElement('div');
+                f.className = 'carta-firma';
+                f.textContent = '— ' + carta.firma;
+                cartasTexto.appendChild(f);
+            }
+        }
+
+        // Cartas.js define la variable global CARTAS. Se carga con <script src>,
+        // asi que funciona igual abriendo el index directo o en GitHub Pages.
+        const datos = (typeof CARTAS !== 'undefined') ? CARTAS : null;
+        const lista = (datos && Array.isArray(datos.cartas)) ? datos.cartas : [];
+        window.CARTAS_DATA = datos;
+
+        // Elige una carta al azar, la pinta en pantalla y la guarda global
+        // (por si Pecera.js quiere saber cuál salió). Se llama cada vez que
+        // se abre la ventana, no solo al cargar la página.
+        function elegirCarta() {
+            cartaElegida = lista.length
+                ? lista[Math.floor(Math.random() * lista.length)]
+                : CARTA_FALLBACK;
+            pintarCarta(cartaElegida);
+            window.CARTA_ACTUAL = cartaElegida;
+        }
+
+        // ===== PECERA =====
+        // El canvas se crea una sola vez (Pecera.init es idempotente), pero
+        // su contenido se resetea con Pecera.setConfig() cada vez que se abre
+        // la ventana: los animalitos de la carta anterior desaparecen y entran
+        // los que le tocan a la carta nueva. Solo corre mientras la ventana
+        // está abierta, para no gastar de más cuando el jugador está jugando.
+        const peceraDiv = document.getElementById('pecera');
+        let peceraInicializada = false;
+
+        function iniciarPecera() {
+            if (typeof Pecera === 'undefined' || !peceraDiv) return;
+            if (!peceraInicializada) {
+                Pecera.init(peceraDiv);
+                peceraInicializada = true;
+            }
+            // Cada carta puede traer su propia pecera (por su "id" en Cartas.js).
+            // Si esa carta no tiene config propia, cae en la config "default".
+            const configs = window.PECERA_CONFIGS || {};
+            const cartaId = cartaElegida && cartaElegida.id;
+            const config = (cartaId && configs[cartaId]) || configs.default || null;
+            Pecera.setConfig(config);
+            Pecera.start();
+        }
+
+        cartasBtn.addEventListener('click', () => {
+            elegirCarta();
+            cartasOverlay.classList.add('open');
+            iniciarPecera();
+        });
+        // Igual que configuración: solo cierra con la X
+        cartasCloseBtn.addEventListener('click', () => {
+            cartasOverlay.classList.remove('open');
+            if (typeof Pecera !== 'undefined') Pecera.stop();
+        });
+    })();
 </script>
 
 <script>
