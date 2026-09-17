@@ -858,6 +858,51 @@
         .mode-card.mode-inferno.locked .mode-card-name { color: #7a4a2a; }
         .mode-card.mode-inferno.locked .mode-card-tagline { color: #6b5138; }
 
+        .modes-view-toggle {
+            display: block;
+            width: 100%;
+            margin-bottom: 16px;
+            background: rgba(255, 150, 0, 0.10);
+            border: 2px solid #ff9900;
+            border-radius: 8px;
+            color: #ffcc80;
+            font-family: monospace;
+            font-weight: bold;
+            letter-spacing: 1px;
+            font-size: 12.5px;
+            padding: 9px 6px;
+            cursor: pointer;
+            text-shadow: 0 0 6px #ff9900;
+            transition: background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
+        }
+
+        .modes-view-toggle:hover {
+            background: rgba(255, 150, 0, 0.22);
+            box-shadow: 0 0 14px rgba(255,150,0,0.6), inset 0 0 8px rgba(255,150,0,0.3);
+            color: #ffe0b3;
+        }
+
+        .mode-card .points-list {
+            margin: 0;
+            padding-left: 16px;
+        }
+        .mode-card .points-list li {
+            font-size: 11px;
+            color: #d8b98c;
+            margin-bottom: 6px;
+            line-height: 1.4;
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .mode-card .points-list li:last-child { margin-bottom: 0; }
+        .mode-card .points-list .points-amount {
+            color: #ffcc80;
+            font-weight: bold;
+            white-space: nowrap;
+            text-shadow: 0 0 5px currentColor;
+        }
+
         /* ===== Botón de configuración (engranaje) ===== */
         #settingsBtn {
             position: fixed;
@@ -1265,6 +1310,7 @@
 <button id="modesTab">🧭 MODOS</button>
 <div id="modesPanel">
     <div class="modes-panel-title">🧭 MODOS</div>
+    <button id="modesViewToggle" class="modes-view-toggle">💰 VER PUNTAJES</button>
     <div id="modesList"></div>
 </div>
 
@@ -1559,6 +1605,38 @@
         const modesTab = document.getElementById('modesTab');
         const modesPanel = document.getElementById('modesPanel');
         const modesList = document.getElementById('modesList');
+        const modesViewToggle = document.getElementById('modesViewToggle');
+
+        let modesView = 'desc'; // 'desc' = descripciones/desafíos | 'points' = cómo se ganan puntos
+
+        // Puntos por segundo sobrevivido: 5, igual en los 4 modos (TIME_SCORE_AMOUNT en cada archivo de modo).
+        const POINTS_INFO = {
+            classic: [
+                { label: 'Matar un Redst o un Purp atravesándolo con el dash', amount: '+50' },
+                { label: 'Un Redst mata a un Purp al chocarlo (sin que dashees)', amount: '+50' },
+                { label: 'Llegar a la zona segura de la Sombra Global a tiempo', amount: '+100' },
+                { label: 'Por cada segundo que sobrevivas', amount: '+5' }
+            ],
+            metro: [
+                { label: 'Matar un Redst o un Purp atravesándolo con el dash', amount: '+50' },
+                { label: 'Un Redst mata a un Purp al chocarlo (sin que dashees)', amount: '+50' },
+                { label: 'Quedar dentro del vagón cuando pasa la Banda de Extinción', amount: '+100' },
+                { label: 'Por cada segundo que sobrevivas', amount: '+5' }
+            ],
+            squasteroids: [
+                { label: 'Romper un asteroide con el dash', amount: '+15' },
+                { label: 'Matar un Purp (con el dash, o que lo mate un Redst al chocarlo)', amount: '+50' },
+                { label: 'Matar un Redst atravesándolo con el dash', amount: '+50' },
+                { label: 'Darle el golpe final a un Berserker (agotar sus 3 vidas)', amount: '+120' },
+                { label: 'Por cada segundo que sobrevivas', amount: '+5' }
+            ],
+            inferno: [
+                { label: 'Fase plana: matar un Purp o un Redst con el dash', amount: '+50' },
+                { label: 'Golpear a un Berserker sin matarlo (le queda vida)', amount: '+20' },
+                { label: 'Golpe final a un Berserker (dash, o Redst que choca contra él)', amount: '+120' },
+                { label: 'Por cada segundo que sobrevivas', amount: '+5' }
+            ]
+        };
 
         const MODES_INFO = [
             {
@@ -1575,7 +1653,7 @@
             {
                 id: 'metro',
                 name: 'METRO',
-                tagline: 'Todo lo de Classic, pero dentro de un vagón que arranca, frena y abre sus puertas.',
+                tagline: 'Similar a Classic, pero dentro de un vagón que arranca, frena y abre sus puertas.',
                 challenges: [
                     'El vagón se detiene en cada parada: al abrirse las puertas entran oleadas de Redst, Purps y algún Rebotón.',
                     'Rebotones: pasajeros tranquilos e inmortales que rebotan como en un pong hasta que llega su parada.',
@@ -1615,14 +1693,36 @@
                 const locked = !!mode.secret && !infernoUnlocked;
                 const name = locked ? '???????' : mode.name;
                 const tagline = locked ? mode.lockedTagline : mode.tagline;
-                const challengesHtml = locked ? '' : `<ul>${mode.challenges.map(c => `<li>${c}</li>`).join('')}</ul>`;
+
+                let extraHtml = '';
+                if (!locked) {
+                    if (modesView === 'desc') {
+                        extraHtml = `<ul>${mode.challenges.map(c => `<li>${c}</li>`).join('')}</ul>`;
+                    } else {
+                        const points = POINTS_INFO[mode.id] || [];
+                        extraHtml = `<ul class="points-list">${points.map(p =>
+                            `<li><span>${p.label}</span><span class="points-amount">${p.amount}</span></li>`
+                        ).join('')}</ul>`;
+                    }
+                }
+
                 return `<div class="mode-card mode-${mode.id}${locked ? ' locked' : ''}">` +
                     `<div class="mode-card-name">${name}</div>` +
                     `<div class="mode-card-tagline">${tagline}</div>` +
-                    challengesHtml +
+                    extraHtml +
                 `</div>`;
             }).join('');
         }
+
+        function updateToggleLabel() {
+            modesViewToggle.textContent = modesView === 'desc' ? '💰 VER PUNTAJES' : '📖 VER DESCRIPCIONES';
+        }
+
+        modesViewToggle.addEventListener('click', () => {
+            modesView = (modesView === 'desc') ? 'points' : 'desc';
+            updateToggleLabel();
+            renderModes();
+        });
 
         modesTab.addEventListener('click', () => {
             const opening = !modesPanel.classList.contains('open');
