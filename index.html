@@ -1044,6 +1044,105 @@
             box-shadow: 0 0 14px rgba(255,0,0,0.8);
         }
 
+        .settings-data-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .settings-data-row .settings-danger-btn {
+            flex: 1;
+        }
+
+        .settings-dropdown-toggle {
+            width: 40px;
+            flex: none;
+            font-family: monospace;
+            font-size: 14px;
+            border-radius: 6px;
+            border: 1px solid #ff4444;
+            background: rgba(255,0,0,0.08);
+            color: #ff6b6b;
+            cursor: pointer;
+            transition: background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+
+        .settings-dropdown-toggle:hover {
+            background: rgba(255,0,0,0.22);
+            box-shadow: 0 0 12px rgba(255,0,0,0.6);
+            color: #ffaaaa;
+        }
+
+        .settings-dropdown-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .settings-record-dropdown {
+            display: none;
+            margin-top: 8px;
+            border: 1px solid #555555;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .settings-record-dropdown.open {
+            display: block;
+        }
+
+        .record-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            font-size: 12px;
+            background: rgba(255,255,255,0.04);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .record-row:last-child {
+            border-bottom: none;
+        }
+
+        .record-row-label {
+            color: #cccccc;
+            letter-spacing: 0.5px;
+        }
+
+        .record-row-empty {
+            color: #777777;
+            font-style: italic;
+            font-size: 11px;
+        }
+
+        .record-delete-btn {
+            font-family: monospace;
+            font-size: 10.5px;
+            font-weight: bold;
+            padding: 5px 8px;
+            border-radius: 4px;
+            border: 1px solid #ff4444;
+            background: rgba(255,0,0,0.08);
+            color: #ff6b6b;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .record-delete-btn:hover:not(:disabled) {
+            background: rgba(255,0,0,0.22);
+            color: #ffaaaa;
+        }
+
+        .record-delete-btn.confirm {
+            background: #ff2222;
+            color: #fff0f0;
+        }
+
+        .record-delete-btn:disabled {
+            opacity: 0.35;
+            cursor: default;
+        }
+
         .settings-credit {
             position: absolute;
             bottom: 6px;
@@ -1349,7 +1448,11 @@
 
         <div class="settings-section">
             <div class="settings-section-label">Datos</div>
-            <button class="settings-danger-btn" id="wipeDataBtn">BORRAR DATOS</button>
+            <div class="settings-data-row">
+                <button class="settings-danger-btn" id="wipeDataBtn">BORRAR DATOS</button>
+                <button class="settings-dropdown-toggle" id="deleteRecordToggle" title="Borrar un récord específico">▾</button>
+            </div>
+            <div class="settings-record-dropdown" id="deleteRecordDropdown"></div>
         </div>
 
         <div class="settings-credit">Creado por EasyFacilongo</div>
@@ -1595,6 +1698,12 @@
             const opening = !scoresPanel.classList.contains('open');
             if (opening) renderScores();
             scoresPanel.classList.toggle('open', opening);
+        });
+
+        // Si se borra un récord específico desde Configuración, refrescar esta
+        // ventanita en caso de que esté abierta en ese momento.
+        document.addEventListener('bulletdasher:scores-changed', () => {
+            if (scoresPanel.classList.contains('open')) renderScores();
         });
     })();
 </script>
@@ -1852,6 +1961,10 @@
     // Solo se cierra con el botón X (tocar fuera de la ventana no la cierra)
     settingsCloseBtn.addEventListener('click', () => {
         settingsOverlay.classList.remove('open');
+        const deleteRecordDropdown = document.getElementById('deleteRecordDropdown');
+        const deleteRecordToggle = document.getElementById('deleteRecordToggle');
+        if (deleteRecordDropdown) deleteRecordDropdown.classList.remove('open');
+        if (deleteRecordToggle) deleteRecordToggle.classList.remove('open');
     });
 
     // Borrar datos: pide confirmación tocando dos veces antes de ejecutar
@@ -1871,6 +1984,69 @@
         localStorage.clear();
         window.location.reload();
     });
+
+    // Borrar un récord específico: desplegable con un botón de borrado por modo,
+    // cada uno pide confirmación tocando dos veces (igual que "BORRAR DATOS").
+    (function () {
+        const RECORD_MODES = [
+            { key: 'classic', label: 'CLASSIC' },
+            { key: 'metro', label: 'METRO' },
+            { key: 'squasteroids', label: 'SQUASTEROIDS' },
+            { key: 'inferno', label: 'INFERNO' }
+        ];
+
+        const toggleBtn = document.getElementById('deleteRecordToggle');
+        const dropdown = document.getElementById('deleteRecordDropdown');
+        let confirmTimeouts = {};
+
+        function renderDropdown() {
+            const entries = (window.BulletDasherScores && BulletDasherScores.getAllEntries)
+                ? (BulletDasherScores.getAllEntries() || {})
+                : {};
+
+            dropdown.innerHTML = RECORD_MODES.map(mode => {
+                const has = !!entries[mode.key];
+                const rightSide = has
+                    ? `<button class="record-delete-btn" data-mode="${mode.key}">BORRAR</button>`
+                    : `<span class="record-row-empty">sin récord</span>`;
+                return `<div class="record-row">` +
+                    `<span class="record-row-label">${mode.label}</span>` +
+                    rightSide +
+                `</div>`;
+            }).join('');
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            const opening = !dropdown.classList.contains('open');
+            dropdown.classList.toggle('open', opening);
+            toggleBtn.classList.toggle('open', opening);
+            if (opening) renderDropdown();
+        });
+
+        // Delegación de eventos: los botones "BORRAR" se regeneran en cada render
+        dropdown.addEventListener('click', (e) => {
+            const btn = e.target.closest('.record-delete-btn');
+            if (!btn) return;
+            const mode = btn.dataset.mode;
+
+            if (!btn.classList.contains('confirm')) {
+                btn.classList.add('confirm');
+                btn.textContent = '¿SEGURO?';
+                confirmTimeouts[mode] = setTimeout(() => {
+                    btn.classList.remove('confirm');
+                    btn.textContent = 'BORRAR';
+                }, 3000);
+                return;
+            }
+
+            clearTimeout(confirmTimeouts[mode]);
+            if (window.BulletDasherScores && BulletDasherScores.deleteMode) {
+                BulletDasherScores.deleteMode(mode);
+            }
+            renderDropdown();
+            document.dispatchEvent(new CustomEvent('bulletdasher:scores-changed'));
+        });
+    })();
 </script>
 
 <script>

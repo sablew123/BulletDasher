@@ -149,6 +149,16 @@
         return entry ? { ...entry.stats } : null;
     }
 
+    // deleteMode(modo): borra únicamente el récord de ese modo, dejando los demás intactos
+    function deleteMode(mode) {
+        if (!MODES.includes(mode)) return false;
+        const data = load();
+        if (!(mode in data)) return false;
+        delete data[mode];
+        persist(data);
+        return true;
+    }
+
     function reset() {
         try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
         for (const legacyKey of LEGACY_KEYS) {
@@ -174,6 +184,7 @@
         getAllEntries,
         getStats,
         formatTime,
+        deleteMode,
         reset
     };
 })(window);
