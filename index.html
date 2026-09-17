@@ -1992,7 +1992,7 @@
             { key: 'classic', label: 'CLASSIC' },
             { key: 'metro', label: 'METRO' },
             { key: 'squasteroids', label: 'SQUASTEROIDS' },
-            { key: 'inferno', label: 'INFERNO' }
+            { key: 'inferno', label: 'INFERNO', secret: true }
         ];
 
         const toggleBtn = document.getElementById('deleteRecordToggle');
@@ -2004,7 +2004,9 @@
                 ? (BulletDasherScores.getAllEntries() || {})
                 : {};
 
-            dropdown.innerHTML = RECORD_MODES.map(mode => {
+            dropdown.innerHTML = RECORD_MODES
+                .filter(mode => !mode.secret || !!entries[mode.key])
+                .map(mode => {
                 const has = !!entries[mode.key];
                 const rightSide = has
                     ? `<button class="record-delete-btn" data-mode="${mode.key}">BORRAR</button>`
