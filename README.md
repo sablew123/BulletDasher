@@ -1,6 +1,6 @@
 # BulletDasher
 ¡Esto es BulletDasher!
-Si amas BulletDasher, amas los juegos hechos con IA, así que acéptalo y deja el racismo. No hay imágenes hechas con IA ni música de IA, solo código organizado con prompts que, si llegan a ser malos, es culpa mía, no de la IA. Así que preparen sus mentes para **¡EL JUEGO MÁS INHUMANAMENTE DIVERTIDO QUE PODRÁN SUFRIR!**
+Si amas BulletDasher, amas los juegos hechos con IA, así que acéptalo y deja el IAcismo. No hay imágenes hechas con IA ni música de IA (eso sí no lo apoyo para un juego), solo código organizado con prompts que, si llegan a ser malos, es culpa mía, no de la IA. Así que preparen sus mentes para **¡EL JUEGO MÁS INHUMANAMENTE DIVERTIDO QUE PODRÁN SUFRIR!**
 BulletDasher tiene muchas cosas. ¿Qué tal si las descubres por tu cuenta?
 **Controles:** WASD y flechas. Bastante simple, realmente.
 Es un juego basado en el género *bullet hell*, arcade y hardcore, con 3 modos de juego y un 4.º y épico modo de práctica.
