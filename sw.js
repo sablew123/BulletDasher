@@ -1,47 +1,46 @@
 const CACHE_NAME = 'bulletdasher-v1';
 
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  'index.html',
+  'manifest.json',
 
   // Modos de juego
-  '/ClassicMode.html',
-  '/History.html',
-  '/InfernoMode.html',
-  '/MetroMode.html',
-  '/PracticeMode.html',
-  '/SquasteroidsMode.html',
+  'ClassicMode.html',
+  'History.html',
+  'InfernoMode.html',
+  'MetroMode.html',
+  'PracticeMode.html',
+  'SquasteroidsMode.html',
 
   // Scripts
-  '/Cartas.js',
-  '/cosmetics.js',
-  '/highscores.js',
-  '/Pecera.js',
+  'Cartas.js',
+  'cosmetics.js',
+  'highscores.js',
+  'Pecera.js',
 
   // Datos
-  '/rewards.json',
+  'rewards.json',
 
   // PDF
-  '/guia_bldh.pdf',
+  'guia_bldh.pdf',
 
   // Audio
-  '/musicabullet.mp3',
-  '/musicaINFERNO.mp3',
-  '/musicametro.mp3',
-  '/musicapractice.mp3',
-  '/musicasquasteroids.mp3',
+  'musicabullet.mp3',
+  'musicaINFERNO.mp3',
+  'musicametro.mp3',
+  'musicapractice.mp3',
+  'musicasquasteroids.mp3',
 
   // Iconos PWA (ya estaban en la raíz, no en /icons/)
-  '/icon-192.png',
-  '/icon-512.png',
-  '/icon-512-maskable.png',
+  'icon-192.png',
+  'icon-512.png',
+  'icon-512-maskable.png',
 
   // SVGs de jugador
-  '/player-icon.svg',
-  '/player-icon-inferno.svg',
-  '/player-icon-practice.svg',
-  '/player-icon-squasteroids.svg',
+  'player-icon.svg',
+  'player-icon-inferno.svg',
+  'player-icon-practice.svg',
+  'player-icon-squasteroids.svg',
 ];
 
 // Instalación: descarga y cachea todo de una

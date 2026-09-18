@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>BulletDasher</title>
-    <link rel="manifest" href="/manifest.json">
+    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#ff8800">
     <link rel="icon" type="image/svg+xml" href="player-icon.svg">
     <style>
@@ -2249,7 +2249,7 @@
     // ===== Registro del Service Worker (para instalar como PWA / APK) =====
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
+            navigator.serviceWorker.register('sw.js')
                 .then((reg) => console.log('SW registrado:', reg.scope))
                 .catch((err) => console.error('Error registrando SW:', err));
         });
