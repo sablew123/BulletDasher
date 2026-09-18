@@ -1,26 +1,32 @@
 {
-  "background_color": "#ff8800",
-  "dir": "ltr",
-  "display": "standalone",
-  "name": "BulletDasher by EasyFacilongo",
-  "orientation": "any",
+  "name": "BulletDasher",
+  "short_name": "bdlh",
+  "description": "BulletDasher, creado por EasyFacilongo",
+  "id": "/",
+  "start_url": "/index.html",
   "scope": "/",
-  "short_name": "BulletDasher",
-  "start_url": "/",
-  "theme_color": "#ffffff",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#ffffff",
+  "theme_color": "#ff8800",
   "icons": [
     {
-      "src": "https://sablew123.github.io/BulletDasher/player-icon.svg",
-      "type": "image/svg+xml",
-      "isSquare": false,
-      "isPng": false,
-      "isWebp": false,
-      "isJpg": false,
-      "width": 0,
-      "is512x512": false,
-      "is256x256": false,
-      "is192x192": false
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-  ],
-  "description": "El juego de BulletDasher listo para instalar"
+  ]
 }
