@@ -591,6 +591,21 @@
         // una posición a la vez (justo cuando está cruzando el borde de envoltura), así que
         // devolvemos todas las posiciones de pantalla válidas para ese punto (normalmente 1,
         // hasta 4 si está cerca de cruzar ambos bordes a la vez)
+        // ---------- CALIDAD DE EFECTOS (glow) ----------
+        // ctx.shadowBlur es, con diferencia, la operación más cara del render: en la mayoría
+        // de celulares no tiene aceleración por GPU y hace un blur completo por cada fill/stroke.
+        // Con 20-30 objetos brillando en pantalla a 60fps, eso solo ya te tira los FPS abajo.
+        // En móvil lo desactivamos del todo (el juego se ve casi igual, solo sin el halo).
+        const LOW_FX = isMobile;
+        function setGlow(color, blur) {
+            if(LOW_FX) return;
+            ctx.shadowBlur = blur;
+            ctx.shadowColor = color;
+        }
+        function clearGlow() {
+            ctx.shadowBlur = 0;
+        }
+
         function getWrappedScreenPositions(wx, wy, margin) {
             let dxBase = wrapDelta(camera.x, wx, WORLD_W);
             let dyBase = wrapDelta(camera.y, wy, WORLD_H);
@@ -614,6 +629,13 @@
         // se ven pasar en la dirección contraria, dejando clarísimo que te estás moviendo y hacia dónde.
         const NUM_STARS = 180;
         let stars = [];
+        // Canvas offscreen del tamaño del mundo: dibujamos las estrellas una sola vez ahí
+        // en vez de hacer 180 beginPath+arc+fill por frame (60 veces por segundo).
+        const starsCanvas = document.createElement('canvas');
+        starsCanvas.width = WORLD_W;
+        starsCanvas.height = WORLD_H;
+        const starsCtx = starsCanvas.getContext('2d');
+
         function initStars() {
             stars = [];
             for(let i=0; i<NUM_STARS; i++) {
@@ -624,17 +646,29 @@
                     a: 0.3 + Math.random() * 0.7
                 });
             }
+            starsCtx.clearRect(0, 0, WORLD_W, WORLD_H);
+            for(let s of stars) {
+                starsCtx.beginPath();
+                starsCtx.fillStyle = `rgba(255,255,255,${s.a})`;
+                starsCtx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+                starsCtx.fill();
+            }
         }
         initStars();
         
+        // Dibuja el starfield con drawImage (1 a 4 llamadas, según si la vista cruza el borde
+        // de envoltura del mundo) en vez de un arc+fill por cada una de las 180 estrellas.
         function drawStars() {
-            for(let s of stars) {
-                let positions = getWrappedScreenPositions(s.x, s.y, 20);
-                for(let p of positions) {
-                    ctx.beginPath();
-                    ctx.fillStyle = `rgba(255,255,255,${s.a})`;
-                    ctx.arc(p.x, p.y, s.r, 0, Math.PI*2);
-                    ctx.fill();
+            const origin = worldToScreen(0, 0);
+            const xs = [origin.x];
+            if(origin.x > 0) xs.push(origin.x - WORLD_W); else xs.push(origin.x + WORLD_W);
+            const ys = [origin.y];
+            if(origin.y > 0) ys.push(origin.y - WORLD_H); else ys.push(origin.y + WORLD_H);
+            for(const x of xs) {
+                if(x > canvas.width || x + WORLD_W < 0) continue;
+                for(const y of ys) {
+                    if(y > canvas.height || y + WORLD_H < 0) continue;
+                    ctx.drawImage(starsCanvas, x, y);
                 }
             }
         }
@@ -1499,14 +1533,13 @@
                 let positions = getWrappedScreenPositions(item.x, item.y, item.size + 10);
                 for(let p of positions) {
                     ctx.fillStyle = `rgba(0, 255, 0, ${alpha})`;
-                    ctx.shadowBlur = 8;
-                    ctx.shadowColor = "lime";
+                    setGlow("lime", 8);
                     ctx.fillRect(p.x - item.size/2, p.y - item.size/2, item.size, item.size);
                     ctx.fillStyle = `rgba(200, 255, 100, ${alpha})`;
                     ctx.fillRect(p.x - item.size/4, p.y - item.size/4, item.size/2, item.size/2);
                 }
             }
-            ctx.shadowBlur = 0;
+            clearGlow();
         }
 
         function drawAsteroidDebris() {
@@ -1523,14 +1556,13 @@
                     ctx.lineTo(d.p2x, d.p2y);
                     ctx.strokeStyle = "#c98dff";
                     ctx.lineWidth = 2.5;
-                    ctx.shadowBlur = 8;
-                    ctx.shadowColor = "#a64dff";
+                    setGlow("#a64dff", 8);
                     ctx.stroke();
                     ctx.restore();
                 }
             }
             ctx.globalAlpha = 1;
-            ctx.shadowBlur = 0;
+            clearGlow();
         }
 
         function drawAsteroids() {
@@ -1556,15 +1588,14 @@
                     ctx.fillStyle = "#241a33";
                     ctx.strokeStyle = "#c98dff";
                     ctx.lineWidth = 2.5;
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = "#a64dff";
+                    setGlow("#a64dff", 10);
                     ctx.fill();
                     ctx.stroke();
                     ctx.restore();
                 }
             }
             ctx.globalAlpha = 1;
-            ctx.shadowBlur = 0;
+            clearGlow();
         }
 
         function drawSlowEnemies() {
@@ -1575,15 +1606,14 @@
                 for(let p of positions) {
                     ctx.globalAlpha = alpha;
                     ctx.fillStyle = purpColors.outer;
-                    ctx.shadowBlur = 5;
-                    ctx.shadowColor = purpColors.outer;
+                    setGlow(purpColors.outer, 5);
                     ctx.fillRect(p.x - e.size/2, p.y - e.size/2, e.size, e.size);
                     ctx.fillStyle = purpColors.inner;
                     ctx.fillRect(p.x - e.size/4, p.y - e.size/4, e.size/2, e.size/2);
                 }
             }
             ctx.globalAlpha = 1;
-            ctx.shadowBlur = 0;
+            clearGlow();
         }
 
         // Colores del berserker: cuerpo naranja-rojizo que se va poniendo más rojo y parpadea
@@ -1600,16 +1630,21 @@
                     const progress = 1 - (b.spawnTimer / BERSERKER_MATERIALIZE_DURATION);
                     for(let p of positions) {
                         const glowR = 55 + 45 * (1 - progress);
-                        const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
-                        grad.addColorStop(0, `rgba(255,100,40,${0.4 * progress})`);
-                        grad.addColorStop(1, 'rgba(255,100,40,0)');
-                        ctx.fillStyle = grad;
+                        // createRadialGradient es caro y esto se llama por cada berserker apareciendo
+                        // cada frame: en LOW_FX usamos un relleno plano en vez del degradé.
+                        if(LOW_FX) {
+                            ctx.fillStyle = `rgba(255,100,40,${0.25 * progress})`;
+                        } else {
+                            const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+                            grad.addColorStop(0, `rgba(255,100,40,${0.4 * progress})`);
+                            grad.addColorStop(1, 'rgba(255,100,40,0)');
+                            ctx.fillStyle = grad;
+                        }
                         ctx.beginPath();
                         ctx.arc(p.x, p.y, glowR, 0, Math.PI*2);
                         ctx.fill();
 
-                        ctx.shadowBlur = 6;
-                        ctx.shadowColor = "#ff5522";
+                        setGlow("#ff5522", 6);
                         for(let part of b.spawnParticles) {
                             const curDist = part.dist * (1 - progress);
                             const px = p.x + Math.cos(part.angle) * curDist;
@@ -1620,7 +1655,7 @@
                             ctx.fill();
                         }
                     }
-                    ctx.shadowBlur = 0;
+                    clearGlow();
                     continue;
                 }
 
@@ -1636,8 +1671,7 @@
                     ctx.translate(p.x, p.y);
                     ctx.rotate(b.rotation);
                     ctx.fillStyle = `rgb(${cr},${cg},${cb})`;
-                    ctx.shadowBlur = 10 + 8 * blink;
-                    ctx.shadowColor = "#ff3300";
+                    setGlow("#ff3300", 10 + 8 * blink);
                     // Cuerpo tipo rombo/púa, para distinguirlo de los cuadrados de lentos/rojos
                     ctx.beginPath();
                     ctx.moveTo(0, -b.size/2);
@@ -1654,7 +1688,7 @@
                     ctx.restore();
                 }
             }
-            ctx.shadowBlur = 0;
+            clearGlow();
         }
 
         function drawRedEnemies() {
@@ -1676,24 +1710,26 @@
                         ctx.fillStyle = "#ff6666";
                     } else {
                         ctx.fillStyle = "#ff3300";
-                        ctx.shadowBlur = 8;
-                        ctx.shadowColor = "red";
+                        setGlow("red", 8);
                     }
                     ctx.fillRect(p.x - b.size/2, p.y - b.size/2, b.size, b.size);
                 }
             }
             ctx.globalAlpha = 1;
-            ctx.shadowBlur = 0;
+            clearGlow();
         }
 
         // DIBUJADO
+        // El canvas nunca cambia de resolución interna (solo se escala por CSS en móvil),
+        // así que este gradiente siempre es igual: se crea una sola vez en vez de cada frame.
+        const bgGradient = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+        bgGradient.addColorStop(0, "#05051a");
+        bgGradient.addColorStop(1, "#100a1f");
+
         function draw() {
             ctx.clearRect(0,0,canvas.width,canvas.height);
             
-            let gradient = ctx.createLinearGradient(0,0,canvas.width,canvas.height);
-            gradient.addColorStop(0, "#05051a");
-            gradient.addColorStop(1, "#100a1f");
-            ctx.fillStyle = gradient;
+            ctx.fillStyle = bgGradient;
             ctx.fillRect(0,0,canvas.width,canvas.height);
             
             // Estrellas de fondo (dan la sensación de movimiento y dirección)
@@ -1719,8 +1755,7 @@
                     const intensity = 0.7 + Math.sin(Date.now() * 0.03) * 0.3;
                     ctx.strokeStyle = `rgba(170, 80, 255, ${intensity})`;
                     ctx.lineWidth = 8;
-                    ctx.shadowBlur = 12;
-                    ctx.shadowColor = "#a64dff";
+                    setGlow("#a64dff", 12);
                     ctx.stroke();
                     // Línea interna más brillante
                     ctx.beginPath();
@@ -1729,7 +1764,7 @@
                     ctx.strokeStyle = `rgba(255, 255, 255, 0.9)`;
                     ctx.lineWidth = 3;
                     ctx.stroke();
-                    ctx.shadowBlur = 0;
+                    clearGlow();
                 }
             }
             
@@ -1740,8 +1775,7 @@
             } else {
                 ctx.fillStyle = "#f0f0f0";
             }
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = "white";
+            setGlow("white", 10);
             ctx.fillRect(pPos.x - player.size/2, pPos.y - player.size/2, player.size, player.size);
             ctx.fillStyle = "#a64dff";
             ctx.fillRect(pPos.x - player.size/4, pPos.y - player.size/4, player.size/2, player.size/2);
@@ -1756,7 +1790,7 @@
                 ctx.fillRect(10, canvas.height-30, (DASH_COOLDOWN_MAX-dashCooldown)*5, 10);
             }
             
-            ctx.shadowBlur = 0;
+            clearGlow();
 
             // Anillos del golpe y aura de borde al dashear (skins)
             Cosmetics.drawHitParticles(ctx);
