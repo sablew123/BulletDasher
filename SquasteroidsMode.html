@@ -26,6 +26,10 @@
         body.damage-flash {
             background-color: #ff0000 !important;
         }
+
+        body.berserker-flash {
+            background-color: rgb(255, 95, 40) !important; /* color del berserker, no rojo genérico */
+        }
         
         canvas {
             border: 2px solid white;
@@ -440,6 +444,42 @@
             } catch(e) { console.log("Audio no soportado"); }
         }
 
+        // Sonido EXTRA tenebroso: solo para cuando el berserker le pega al jugador
+        // estando este con sus 3 vidas completas (el golpe que más duele y más
+        // vidas de un plumazo le quita). Dos osciladores graves y desafinados
+        // entre sí para que suene sucio/amenazante, con caída larga.
+        function playBerserkerCrushSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+                const osc1 = audioCtx.createOscillator();
+                const osc2 = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                osc1.connect(gainNode);
+                osc2.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                osc1.type = 'sawtooth';
+                osc2.type = 'square';
+                osc1.frequency.value = 65;
+                osc2.frequency.value = 61; // ligeramente desafinado respecto a osc1: choque grave y sucio
+                gainNode.gain.value = 0.7;
+
+                osc1.start();
+                osc2.start();
+                osc1.frequency.exponentialRampToValueAtTime(24, audioCtx.currentTime + 0.55);
+                osc2.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.55);
+                gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.6);
+                osc1.stop(audioCtx.currentTime + 0.6);
+                osc2.stop(audioCtx.currentTime + 0.6);
+
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+            } catch(e) { console.log("Audio no soportado"); }
+        }
+
         function playHealSound() {
             try {
                 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -462,19 +502,46 @@
             } catch(e) { console.log("Audio no soportado"); }
         }
         
-        // DESTELLO ROJO
+        // DESTELLO ROJO (o naranja del berserker cuando el golpe es el brutal de 3 vidas)
         let damageFlashTimer = 0;
-        function triggerDamageFlash() {
-            bodyElement.classList.add('damage-flash');
+        let activeFlashClass = 'damage-flash';
+        function triggerDamageFlash(skipSound, berserkerColor) {
+            activeFlashClass = berserkerColor ? 'berserker-flash' : 'damage-flash';
+            bodyElement.classList.add(activeFlashClass);
             damageFlashTimer = 6;
-            playDamageSound();
+            if(!skipSound) playDamageSound();
         }
         
         function updateDamageFlash() {
             if (damageFlashTimer > 0) {
                 damageFlashTimer--;
                 if (damageFlashTimer <= 0) {
-                    bodyElement.classList.remove('damage-flash');
+                    bodyElement.classList.remove(activeFlashClass);
+                }
+            }
+        }
+
+        // TEMBLOR DE PANTALLA: ligero, solo para golpes muy fuertes (el berserker
+        // pegándole al jugador con sus 3 vidas completas). Se aplica moviendo el
+        // propio canvas con un offset aleatorio que decae con el tiempo.
+        let screenShakeTimer = 0;
+        let screenShakeDuration = 0;
+        const SCREEN_SHAKE_MAGNITUDE = 6; // px, "ligeramente"
+        function triggerScreenShake() {
+            screenShakeTimer = 18;
+            screenShakeDuration = 18;
+        }
+
+        function updateScreenShake() {
+            if (screenShakeTimer > 0) {
+                screenShakeTimer--;
+                const progress = screenShakeTimer / screenShakeDuration; // decae de 1 a 0
+                const mag = SCREEN_SHAKE_MAGNITUDE * progress;
+                const offX = (Math.random() * 2 - 1) * mag;
+                const offY = (Math.random() * 2 - 1) * mag;
+                canvas.style.transform = `translate(${offX.toFixed(1)}px, ${offY.toFixed(1)}px)`;
+                if (screenShakeTimer <= 0) {
+                    canvas.style.transform = 'translate(0px, 0px)';
                 }
             }
         }
@@ -789,11 +856,19 @@
         // dirección en la que iba el berserker, y el berserker rebota con el choque.
         function berserkerHitPlayer(b) {
             if(player.invincible > 0 || gameOver) return;
+            const wasFullHp = (hp === 3); // golpe recibido con las 3 vidas completas: el más brutal
             livesLost += Math.min(2, hp); // solo cuentan las vidas que realmente tenía
             hp -= 2;
             tookDamageThisRun = true; // logro "Dash God": ya no se puede conseguir esta partida
             { const hitPos = worldToScreen(player.x, player.y); Cosmetics.onPlayerHit(hitPos.x, hitPos.y); } // skin-hit-rings
-            triggerDamageFlash();
+            triggerDamageFlash(wasFullHp, wasFullHp); // golpe de 3 vidas: sin sonido normal y con el flash en color berserker
+            if(wasFullHp) {
+                // Con las 3 vidas completas el golpe quita un montón de vida de un
+                // solo zarpazo: sonido extra grave/tenebroso y un ligero temblor de
+                // pantalla para que se sienta el peso del golpe.
+                playBerserkerCrushSound();
+                triggerScreenShake();
+            }
             if(hp <= 0) {
                 hp = 0;
                 gameOver = true;
@@ -1838,6 +1913,7 @@
             updateDashTrail();
             
             updateDamageFlash();
+            updateScreenShake();
         }
         
         // ---------- INPUTS TÁCTILES (joystick + cruz de dash) ----------
